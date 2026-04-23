@@ -219,16 +219,23 @@ const GAMEPLAY_SKILL_OPTIONS = [
   'Giải mã bằng khóa chạy',
   'Mã hóa bằng khóa chạy',
   'Biến ma trận số thành ảnh',
-  'Mã hóa ma trận bằng cộng dồn',
-  'Mã hóa ma trận',
+  'Biến ma trận thành ma trận xoắn ốc',
+  'Phân cụm ma trận',
   'Dò mật khẩu dựa trên từ vựng',
   'Tạo mã morse',
   'Dò tìm mật khẩu online',
+  'Dò mật khẩu theo quy tắc',
+  'Dò mật khẩu từ bàn phím',
+  'Mã độc keylogger',
   'Chặn bắt gói tin',
   'Phát lại gói tin',
-  'Làm giả tên miền',
-  'Chọn website giả mạo',
+  'Đánh giá tên miền giả mạo',
+  'Tạo website giả mạo',
+  'Mã độc capcha',
 ] as const
+
+// Skills that can only be dropped together
+const CAPCHA_SKILL_GROUP = ['Đánh giá tên miền giả mạo', 'Tạo website giả mạo', 'Mã độc capcha'] as const
 
 const EXERCISE_TASKS: ExerciseTask[] = [
   {
@@ -470,32 +477,42 @@ batman`)
 
   // Dò tìm mật khẩu online inputs
   const [passwordSearchKeyword, setPasswordSearchKeyword] = useState('')
-  const [passwordSearchDataType, setPasswordSearchDataType] = useState('')
-  const [passwordSearchSource, setPasswordSearchSource] = useState('')
   const [passwordSearchResult, setPasswordSearchResult] = useState('')
 
+  // Dò mật khẩu theo quy tắc inputs
+  const [passwordRuleSelection, setPasswordRuleSelection] = useState('')
+  const [passwordRuleResult, setPasswordRuleResult] = useState('')
+
+  // Dò mật khẩu từ bàn phím inputs
+  const [keyboardPasswordResult, setKeyboardPasswordResult] = useState('')
+
+  // Mã độc keylogger inputs
+  const [keyloggerResult, setKeyloggerResult] = useState('')
+
   // Chặn bắt gói tin inputs
-  const [pcapSource, setPcapSource] = useState('')
-  const [packetFilter, setPacketFilter] = useState('')
-  const [protocolFilter, setProtocolFilter] = useState('')
-  const [ipFilter, setIpFilter] = useState('')
-  const [portFilter, setPortFilter] = useState('')
   const [packetCaptureResult, setPacketCaptureResult] = useState('')
 
   // Phát lại gói tin inputs
-  const [replaySource, setReplaySource] = useState('')
   const [replayPacketNumber, setReplayPacketNumber] = useState('')
-  const [replayCount, setReplayCount] = useState(1)
-  const [replayMode, setReplayMode] = useState('')
-  const [replayDelay, setReplayDelay] = useState(0)
+  const [replayField1Name, setReplayField1Name] = useState('')
+  const [replayField1Value, setReplayField1Value] = useState('')
+  const [replayField2Name, setReplayField2Name] = useState('')
+  const [replayField2Value, setReplayField2Value] = useState('')
+  const [replayField3Name, setReplayField3Name] = useState('')
+  const [replayField3Value, setReplayField3Value] = useState('')
+  const [replayField4Name, setReplayField4Name] = useState('')
+  const [replayField4Value, setReplayField4Value] = useState('')
   const [packetReplayResult, setPacketReplayResult] = useState('')
 
-  // Làm giả tên miền inputs (skill 1)
+  // Đánh giá tên miền giả mạo inputs (skill 1)
   const [fakeDomainInput, setFakeDomainInput] = useState('')
   const [domainEvaluationResult, setDomainEvaluationResult] = useState('')
 
-  // Chọn website giả mạo inputs (skill 2)
+  // Tạo website giả mạo inputs (skill 2)
   const [selectedFakeWebsite, setSelectedFakeWebsite] = useState('')
+
+  // Mã độc capcha inputs
+  const [capchaMalwareResult, setCapchaMalwareResult] = useState('')
 
   // Track multiple dropped skills
   const [droppedSkills, setDroppedSkills] = useState<string[]>([])
@@ -2569,12 +2586,26 @@ batman`)
                         event.preventDefault()
                         const nextSkill = event.dataTransfer.getData('text/plain')
                         if (nextSkill) {
-                          // Add to dropped skills (support multiple skills)
-                          if (!droppedSkills.includes(nextSkill)) {
-                            setDroppedSkills(prev => [...prev, nextSkill])
-                          }
-                          // Only set single droppedGameplaySkill if droppedSkills is empty (first skill)
-                          if (droppedSkills.length === 0) {
+                          // Nhóm 3 skill đặc biệt: Đánh giá tên miền giả mạo, Tạo website giả mạo, Mã độc capcha
+                          const isSpecialSkill = CAPCHA_SKILL_GROUP.includes(nextSkill as typeof CAPCHA_SKILL_GROUP[number])
+                          const hasSpecialSkill = droppedSkills.some(s => CAPCHA_SKILL_GROUP.includes(s as typeof CAPCHA_SKILL_GROUP[number]))
+                          
+                          if (isSpecialSkill) {
+                            // Nếu đang có skill thường: không được thêm skill đặc biệt
+                            if (droppedSkills.length > 0 && !hasSpecialSkill) {
+                              return
+                            }
+                            // Skill đặc biệt: thả cùng lúc được với các skill đặc biệt khác
+                            if (!droppedSkills.includes(nextSkill)) {
+                              setDroppedSkills(prev => [...prev, nextSkill])
+                            }
+                            // Set as main skill if first one
+                            if (droppedSkills.length === 0) {
+                              setDroppedGameplaySkill(nextSkill)
+                            }
+                          } else {
+                            // Skill thường: chỉ được thả độc lập (xóa tất cả skill cũ)
+                            setDroppedSkills([nextSkill])
                             setDroppedGameplaySkill(nextSkill)
                           }
                           // Reset skill-specific inputs when new skill is dropped
@@ -2620,27 +2651,41 @@ batman`)
                           setMorsePlaintext('')
                           setMorseResult('')
                           setPasswordSearchKeyword('')
-                          setPasswordSearchDataType('')
-                          setPasswordSearchSource('')
                           setPasswordSearchResult('')
-                          setPcapSource('')
-                          setPacketFilter('')
-                          setProtocolFilter('')
-                          setIpFilter('')
-                          setPortFilter('')
                           setPacketCaptureResult('')
-                          setReplaySource('')
                           setReplayPacketNumber('')
-                          setReplayCount(1)
-                          setReplayMode('')
-                          setReplayDelay(0)
+                          setReplayField1Name('')
+                          setReplayField1Value('')
+                          setReplayField2Name('')
+                          setReplayField2Value('')
+                          setReplayField3Name('')
+                          setReplayField3Value('')
+                          setReplayField4Name('')
+                          setReplayField4Value('')
                           setPacketReplayResult('')
                           setFakeDomainInput('')
                           setDomainEvaluationResult('')
                           setSelectedFakeWebsite('')
+                          setCapchaMalwareResult('')
                         }
                       }}
                     >
+                      {/* Loa: chỉ hiện ở bài 1, trong ô kéo thả, góc trên bên phải */}
+                      {activeExerciseTaskId === 1 && (
+                        <button
+                          type="button"
+                          onClick={() => toggleSound()}
+                          className="absolute right-[2%] top-[2%] w-8 h-8 border-0 bg-transparent p-0 cursor-pointer z-50"
+                          title={soundOn ? 'Tắt loa' : 'Bật loa'}
+                        >
+                          <img
+                            src="/assets/pixel-office/loudspeaker.png"
+                            alt="Loa"
+                            className={`w-full h-full object-contain ${soundOn ? '' : 'opacity-50'}`}
+                            draggable={false}
+                          />
+                        </button>
+                      )}
                       {/* Inner container - full scrollable area */}
                       <div className="absolute inset-[8%_6%_8%_6%] overflow-y-auto overflow-x-hidden">
                         {/* Dropped skill button(s) - show all dropped skills */}
@@ -2667,6 +2712,17 @@ batman`)
                           </div>
                         )}
 
+                        {/* Thông báo capcha - chỉ hiện khi đủ 3 skill */}
+                        {droppedSkills.includes('Đánh giá tên miền giả mạo') && 
+                         droppedSkills.includes('Tạo website giả mạo') && 
+                         droppedSkills.includes('Mã độc capcha') && (
+                          <div className="mt-4 text-center">
+                            <span className="text-[#228B22] text-[clamp(10px,1vw,15px)] font-bold uppercase tracking-wide">
+                              ĐÃ THÊM MÃ ĐỘC CAPCHA
+                            </span>
+                          </div>
+                        )}
+
                         {/* Giải mã hóa bằng từ điển */}
                         {droppedGameplaySkill === 'Giải mã hóa bằng từ điển' && (
                           <div className="mt-[2%] flex flex-col gap-3">
@@ -2687,10 +2743,10 @@ batman`)
                                 className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(9px,0.9vw,14px)] text-[#2d4e79] outline-none cursor-pointer appearance-none"
                               >
                                 <option value="" disabled className="text-[#5a7a9a]">Chọn bộ từ điển...</option>
-                                <option value="morse">Mã Morse</option>
-                                <option value="vietnamese">Tiếng Việt</option>
-                                <option value="binary">Nhị phân</option>
-                                <option value="hex">Hex</option>
+                                <option value="morse">Từ điển sát nghĩa</option>
+                                <option value="vietnamese">Từ điển Ticte</option>
+                                <option value="binary">Từ điển Tây Bắc</option>
+                                
                               </select>
                             </div>
                             {/* Button - 1/3 width */}
@@ -2729,41 +2785,7 @@ batman`)
                                 className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(9px,0.9vw,14px)] text-[#2d4e79] outline-none placeholder:text-[#5a7a9a]"
                               />
                             </div>
-                            {/* Select định dạng dữ liệu */}
-                            <div className="relative w-full" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
-                              <select
-                                value={xorHoaDataFormat}
-                                onChange={(event) => setXorHoaDataFormat(event.target.value)}
-                                className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(9px,0.9vw,14px)] text-[#2d4e79] outline-none cursor-pointer appearance-none"
-                              >
-                                <option value="" disabled className="text-[#5a7a9a]">Chọn định dạng dữ liệu...</option>
-                                {XOR_DATA_FORMAT_OPTIONS.map((opt) => (
-                                  <option key={opt.id} value={opt.id}>{opt.name}</option>
-                                ))}
-                              </select>
-                            </div>
-                            {/* Khóa XOR input */}
-                            <div className="relative w-full" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
-                              <input
-                                value={xorHoaKey}
-                                onChange={(event) => setXorHoaKey(event.target.value)}
-                                placeholder="Nhập khóa XOR..."
-                                className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(9px,0.9vw,14px)] text-[#2d4e79] outline-none placeholder:text-[#5a7a9a]"
-                              />
-                            </div>
-                            {/* Select kiểu khóa */}
-                            <div className="relative w-full" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
-                              <select
-                                value={xorHoaKeyType}
-                                onChange={(event) => setXorHoaKeyType(event.target.value)}
-                                className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(9px,0.9vw,14px)] text-[#2d4e79] outline-none cursor-pointer appearance-none"
-                              >
-                                <option value="" disabled className="text-[#5a7a9a]">Chọn kiểu khóa...</option>
-                                {XOR_KEY_TYPE_OPTIONS.map((opt) => (
-                                  <option key={opt.id} value={opt.id}>{opt.name}</option>
-                                ))}
-                              </select>
-                            </div>
+                            
                             {/* Submit button - 1/3 width */}
                             <div className="w-1/3 mx-auto">
                               <button
@@ -2878,11 +2900,25 @@ batman`)
                           </div>
                         )}
 
-                        {/* Biến ma trận số thành ảnh */}
+{/* Biến ma trận số thành ảnh */}
                         {droppedGameplaySkill === 'Biến ma trận số thành ảnh' && (
                           <div className="mt-[2%] flex flex-col gap-3">
                             <div className="text-[#233f66] text-[clamp(9px,0.9vw,14px)] text-center mb-1">
-                              
+                               
+                            </div>
+                            {/* Download button */}
+                            <div className="w-1/3 mx-auto">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const link = document.createElement('a')
+                                  link.href = '/file/matrix.xlsx'
+                                  link.download = 'matrix1.xlsx'
+                                  link.click()
+                                }}
+                                className="relative w-full"
+                                style={{ height: 'clamp(84px, 12vw, 120px)', backgroundImage: "url('/assets/pixel-office/download.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}
+                              />
                             </div>
                             {/* 21x21 Grid */}
                             <div className="flex justify-center">
@@ -2937,10 +2973,24 @@ batman`)
                         )}
 
                         {/* Mã hóa ma trận bằng cộng dồn */}
-                        {droppedGameplaySkill === 'Mã hóa ma trận bằng cộng dồn' && (
+                        {droppedGameplaySkill === 'Biến ma trận thành ma trận xoắn ốc' && (
                           <div className="mt-[2%] flex flex-col gap-3">
                             <div className="text-[#233f66] text-[clamp(9px,0.9vw,14px)] text-center mb-1">
                             
+                            </div>
+                            {/* Download button */}
+                            <div className="w-1/3 mx-auto">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const link = document.createElement('a')
+                                  link.href = '/file/matrix.xlsx'
+                                  link.download = 'matrix.xlsx'
+                                  link.click()
+                                }}
+                                className="relative w-full"
+                                style={{ height: 'clamp(84px, 12vw, 120px)', backgroundImage: "url('/assets/pixel-office/download.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}
+                              />
                             </div>
                             {/* 21x21 Grid */}
                             <div className="flex justify-center">
@@ -2977,7 +3027,7 @@ batman`)
                                 onClick={() => {
                                   console.log('Matrix Cumulative:', matrixCumulativeData)
                                   const binaryString = matrixCumulativeData.flat().join('')
-                                  setMatrixCumulativeResult(`Ma trận cộng dồn: ${binaryString.slice(0, 20)}...`)
+                                  setMatrixCumulativeResult(`Ma trận xoắn ốc: ${binaryString.slice(0, 20)}...`)
                                 }}
                                 className="relative w-full"
                                 style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_03.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}
@@ -2993,11 +3043,25 @@ batman`)
                           </div>
                         )}
 
-                        {/* Mã hóa ma trận */}
-                        {droppedGameplaySkill === 'Mã hóa ma trận' && (
+                        {/* Phân cụm ma trận  */}
+                        {droppedGameplaySkill === 'Phân cụm ma trận' && (
                           <div className="mt-[2%] flex flex-col gap-3">
                             <div className="text-[#233f66] text-[clamp(9px,0.9vw,14px)] text-center mb-1">
                               
+                            </div>
+                            {/* Download button */}
+                            <div className="w-1/3 mx-auto">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const link = document.createElement('a')
+                                  link.href = '/file/matrix.xlsx'
+                                  link.download = 'matrix.xlsx'
+                                  link.click()
+                                }}
+                                className="relative w-full"
+                                style={{ height: 'clamp(84px, 12vw, 120px)', backgroundImage: "url('/assets/pixel-office/download.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}
+                              />
                             </div>
                             {/* 21x21 Grid */}
                             <div className="flex justify-center">
@@ -3062,7 +3126,7 @@ batman`)
                                 value={wordlistContent}
                                 onChange={(event) => setWordlistContent(event.target.value)}
                                 placeholder="Nhập wordlist..."
-                                className="absolute inset-0 w-full h-full border-0 bg-transparent pt-[3px] pl-[5px] pb-[3px] text-[clamp(9px,0.9vw,14px)] text-[#2d4e79] outline-none resize-none"
+                                className="absolute inset-0 w-full h-full border-0 bg-transparent pt-[15px] pl-[15px] pb-[15px] text-[clamp(9px,0.9vw,14px)] text-[#2d4e79] outline-none resize-none"
                                 style={{ background: 'transparent' }}
                               />
                             </div>
@@ -3149,41 +3213,13 @@ batman`)
                                 className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(9px,0.9vw,14px)] text-[#2d4e79] outline-none placeholder:text-[#5a7a9a]"
                               />
                             </div>
-                            {/* Select: Loại dữ liệu cần tìm */}
-                            <div className="relative w-full" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
-                              <select
-                                value={passwordSearchDataType}
-                                onChange={(event) => setPasswordSearchDataType(event.target.value)}
-                                className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(9px,0.9vw,14px)] text-[#2d4e79] outline-none cursor-pointer appearance-none"
-                              >
-                                <option value="" disabled className="text-[#5a7a9a]">Loại dữ liệu cần tìm...</option>
-                                <option value="email">Email</option>
-                                <option value="username">Tên đăng nhập</option>
-                                <option value="password">Mật khẩu</option>
-                                <option value="phone">Số điện thoại</option>
-                              </select>
-                            </div>
-                            {/* Select: Nguồn dữ liệu */}
-                            <div className="relative w-full" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
-                              <select
-                                value={passwordSearchSource}
-                                onChange={(event) => setPasswordSearchSource(event.target.value)}
-                                className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(9px,0.9vw,14px)] text-[#2d4e79] outline-none cursor-pointer appearance-none"
-                              >
-                                <option value="" disabled className="text-[#5a7a9a]">Nguồn dữ liệu...</option>
-                                <option value="facebook">Facebook</option>
-                                <option value="google">Google</option>
-                                <option value="github">GitHub</option>
-                                <option value="linkedin">LinkedIn</option>
-                              </select>
-                            </div>
                             {/* Submit button */}
                             <div className="w-1/3 mx-auto">
                               <button
                                 type="button"
                                 onClick={() => {
-                                  console.log('Password Search:', { keyword: passwordSearchKeyword, dataType: passwordSearchDataType, source: passwordSearchSource })
-                                  setPasswordSearchResult(`Đã tìm: ${passwordSearchKeyword} | Loại: ${passwordSearchDataType} | Nguồn: ${passwordSearchSource}`)
+                                  console.log('Password Search:', { keyword: passwordSearchKeyword })
+                                  setPasswordSearchResult(`Đã tìm: ${passwordSearchKeyword}`)
                                 }}
                                 className="relative w-full"
                                 style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_03.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}
@@ -3199,71 +3235,104 @@ batman`)
                           </div>
                         )}
 
-                        {/* Chặn bắt gói tin */}
-                        {droppedGameplaySkill === 'Chặn bắt gói tin' && (
+                        {/* Dò mật khẩu theo quy tắc */}
+                        {droppedGameplaySkill === 'Dò mật khẩu theo quy tắc' && (
                           <div className="mt-[2%] flex flex-col gap-3">
-                            {/* Select: Nguồn PCAP */}
+                            {/* Select: Quy tắc */}
                             <div className="relative w-full" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
                               <select
-                                value={pcapSource}
-                                onChange={(event) => setPcapSource(event.target.value)}
-                                className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(9px,0.9vw,14px)] text-[#2d4e79] outline-none cursor-pointer appearance-none"
+                                value={passwordRuleSelection}
+                                onChange={(event) => setPasswordRuleSelection(event.target.value)}
+                                className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(7px,0.7vw,11px)] text-[#2d4e79] outline-none cursor-pointer appearance-none"
                               >
-                                <option value="" disabled className="text-[#5a7a9a]">Nguồn PCAP...</option>
-                                <option value="file">File PCAP</option>
-                                <option value="live">Live Capture</option>
-                                <option value="interface">Network Interface</option>
+                                <option value="" disabled className="text-[#5a7a9a]">Chọn quy tắc...</option>
+                                <option value="adjacent_numbers">Số gần nhau</option>
+                                <option value="adjacent_letters">Chữ gần nhau</option>
+                                <option value="even_spacing">Chữ cách đều</option>
                               </select>
-                            </div>
-                            {/* Input text: Bộ lọc gói tin */}
-                            <div className="relative w-full" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
-                              <input
-                                value={packetFilter}
-                                onChange={(event) => setPacketFilter(event.target.value)}
-                                placeholder="Bộ lọc gói tin (BPF)..."
-                                className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(9px,0.9vw,14px)] text-[#2d4e79] outline-none placeholder:text-[#5a7a9a]"
-                              />
-                            </div>
-                            {/* Select: Giao thức */}
-                            <div className="relative w-full" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
-                              <select
-                                value={protocolFilter}
-                                onChange={(event) => setProtocolFilter(event.target.value)}
-                                className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(9px,0.9vw,14px)] text-[#2d4e79] outline-none cursor-pointer appearance-none"
-                              >
-                                <option value="" disabled className="text-[#5a7a9a]">Giao thức...</option>
-                                <option value="tcp">TCP</option>
-                                <option value="udp">UDP</option>
-                                <option value="icmp">ICMP</option>
-                                <option value="http">HTTP</option>
-                                <option value="dns">DNS</option>
-                              </select>
-                            </div>
-                            {/* Input text: IP nguồn / đích */}
-                            <div className="relative w-full" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
-                              <input
-                                value={ipFilter}
-                                onChange={(event) => setIpFilter(event.target.value)}
-                                placeholder="IP nguồn / đích (ví dụ: 192.168.1.1)..."
-                                className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(9px,0.9vw,14px)] text-[#2d4e79] outline-none placeholder:text-[#5a7a9a]"
-                              />
-                            </div>
-                            {/* Input text: Port */}
-                            <div className="relative w-full" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
-                              <input
-                                value={portFilter}
-                                onChange={(event) => setPortFilter(event.target.value)}
-                                placeholder="Port (ví dụ: 80, 443)..."
-                                className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(9px,0.9vw,14px)] text-[#2d4e79] outline-none placeholder:text-[#5a7a9a]"
-                              />
                             </div>
                             {/* Submit button */}
                             <div className="w-1/3 mx-auto">
                               <button
                                 type="button"
                                 onClick={() => {
-                                  console.log('Packet Capture:', { source: pcapSource, filter: packetFilter, protocol: protocolFilter, ip: ipFilter, port: portFilter })
-                                  setPacketCaptureResult(`PCAP: ${pcapSource} | Protocol: ${protocolFilter} | IP: ${ipFilter || 'Any'} | Port: ${portFilter || 'Any'}`)
+                                  console.log('Password Rule:', passwordRuleSelection)
+                                  setPasswordRuleResult(`Quy tắc: ${passwordRuleSelection}`)
+                                }}
+                                className="relative w-full"
+                                style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_03.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}
+                              >
+                                <span className="text-white text-[clamp(7px,0.8vw,12px)] font-bold">Submit</span>
+                              </button>
+                            </div>
+                            {passwordRuleResult && (
+                              <div className="p-[3%] bg-white/30 rounded text-[#233f66] text-[clamp(6px,0.7vw,10px)] break-words">
+                                {passwordRuleResult}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Dò mật khẩu từ bàn phím */}
+                        {droppedGameplaySkill === 'Dò mật khẩu từ bàn phím' && (
+                          <div className="mt-[2%] flex flex-col gap-3">
+                            {/* Submit button */}
+                            <div className="w-1/3 mx-auto">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  console.log('Keyboard Password')
+                                  setKeyboardPasswordResult('Đã dò mật khẩu từ bàn phím')
+                                }}
+                                className="relative w-full"
+                                style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_03.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}
+                              >
+                                <span className="text-white text-[clamp(7px,0.8vw,12px)] font-bold">Submit</span>
+                              </button>
+                            </div>
+                            {keyboardPasswordResult && (
+                              <div className="p-[3%] bg-white/30 rounded text-[#233f66] text-[clamp(6px,0.7vw,10px)] break-words">
+                                {keyboardPasswordResult}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Mã độc keylogger */}
+                        {droppedGameplaySkill === 'Mã độc keylogger' && (
+                          <div className="mt-[2%] flex flex-col gap-3">
+                            {/* Submit button */}
+                            <div className="w-1/3 mx-auto">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  console.log('Keylogger')
+                                  setKeyloggerResult('Đã phân tích mã độc keylogger')
+                                }}
+                                className="relative w-full"
+                                style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_03.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}
+                              >
+                                <span className="text-white text-[clamp(7px,0.8vw,12px)] font-bold">Submit</span>
+                              </button>
+                            </div>
+                            {keyloggerResult && (
+                              <div className="p-[3%] bg-white/30 rounded text-[#233f66] text-[clamp(6px,0.7vw,10px)] break-words">
+                                {keyloggerResult}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Chặn bắt gói tin */}
+                        {droppedGameplaySkill === 'Chặn bắt gói tin' && (
+                          <div className="mt-[2%] flex flex-col gap-3">
+                            {/* Submit button */}
+                            <div className="w-1/3 mx-auto">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  console.log('Packet Capture')
+                                  setPacketCaptureResult('Đã chặn bắt gói tin')
                                 }}
                                 className="relative w-full"
                                 style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_03.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}
@@ -3282,67 +3351,104 @@ batman`)
                         {/* Phát lại gói tin */}
                         {droppedGameplaySkill === 'Phát lại gói tin' && (
                           <div className="mt-[2%] flex flex-col gap-3">
-                            {/* Select: Nguồn packet */}
-                            <div className="relative w-full" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
-                              <select
-                                value={replaySource}
-                                onChange={(event) => setReplaySource(event.target.value)}
-                                className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(9px,0.9vw,14px)] text-[#2d4e79] outline-none cursor-pointer appearance-none"
-                              >
-                                <option value="" disabled className="text-[#5a7a9a]">Nguồn packet...</option>
-                                <option value="pcap">PCAP File</option>
-                                <option value="capture">Live Capture</option>
-                              </select>
-                            </div>
-                            {/* Input text / number: Số thứ tự gói */}
+                            {/* Input text: Số gói tin */}
                             <div className="relative w-full" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
                               <input
                                 value={replayPacketNumber}
                                 onChange={(event) => setReplayPacketNumber(event.target.value)}
-                                placeholder="Số thứ tự gói..."
+                                placeholder="Số gói tin..."
                                 className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(9px,0.9vw,14px)] text-[#2d4e79] outline-none placeholder:text-[#5a7a9a]"
                               />
                             </div>
-                            {/* Input number: Số lần phát lại */}
-                            <div className="relative w-full" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
-                              <input
-                                type="number"
-                                value={replayCount}
-                                onChange={(event) => setReplayCount(parseInt(event.target.value) || 1)}
-                                placeholder="Số lần phát lại..."
-                                className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(9px,0.9vw,14px)] text-[#2d4e79] outline-none placeholder:text-[#5a7a9a]"
-                              />
+                            {/* Field 1 */}
+                            <div className="flex gap-2">
+                              <div className="relative w-1/2" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
+                                <input
+                                  value={replayField1Name}
+                                  onChange={(event) => setReplayField1Name(event.target.value)}
+                                  placeholder="Trường 1..."
+                                  className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(8px,0.8vw,12px)] text-[#2d4e79] outline-none placeholder:text-[#5a7a9a]"
+                                />
+                              </div>
+                              <div className="relative w-1/2" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
+                                <input
+                                  value={replayField1Value}
+                                  onChange={(event) => setReplayField1Value(event.target.value)}
+                                  placeholder="Giá trị 1..."
+                                  className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(8px,0.8vw,12px)] text-[#2d4e79] outline-none placeholder:text-[#5a7a9a]"
+                                />
+                              </div>
                             </div>
-                            {/* Select: Chế độ phát */}
-                            <div className="relative w-full" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
-                              <select
-                                value={replayMode}
-                                onChange={(event) => setReplayMode(event.target.value)}
-                                className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(9px,0.9vw,14px)] text-[#2d4e79] outline-none cursor-pointer appearance-none"
-                              >
-                                <option value="" disabled className="text-[#5a7a9a]">Chế độ phát...</option>
-                                <option value="once">Một lần</option>
-                                <option value="loop">Lặp lại</option>
-                                <option value="sequential">Tuần tự</option>
-                              </select>
+                            {/* Field 2 */}
+                            <div className="flex gap-2">
+                              <div className="relative w-1/2" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
+                                <input
+                                  value={replayField2Name}
+                                  onChange={(event) => setReplayField2Name(event.target.value)}
+                                  placeholder="Trường 2..."
+                                  className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(8px,0.8vw,12px)] text-[#2d4e79] outline-none placeholder:text-[#5a7a9a]"
+                                />
+                              </div>
+                              <div className="relative w-1/2" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
+                                <input
+                                  value={replayField2Value}
+                                  onChange={(event) => setReplayField2Value(event.target.value)}
+                                  placeholder="Giá trị 2..."
+                                  className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(8px,0.8vw,12px)] text-[#2d4e79] outline-none placeholder:text-[#5a7a9a]"
+                                />
+                              </div>
                             </div>
-                            {/* Input number: Delay giữa các lần phát */}
-                            <div className="relative w-full" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
-                              <input
-                                type="number"
-                                value={replayDelay}
-                                onChange={(event) => setReplayDelay(parseInt(event.target.value) || 0)}
-                                placeholder="Delay (ms)..."
-                                className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(9px,0.9vw,14px)] text-[#2d4e79] outline-none placeholder:text-[#5a7a9a]"
-                              />
+                            {/* Field 3 */}
+                            <div className="flex gap-2">
+                              <div className="relative w-1/2" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
+                                <input
+                                  value={replayField3Name}
+                                  onChange={(event) => setReplayField3Name(event.target.value)}
+                                  placeholder="Trường 3..."
+                                  className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(8px,0.8vw,12px)] text-[#2d4e79] outline-none placeholder:text-[#5a7a9a]"
+                                />
+                              </div>
+                              <div className="relative w-1/2" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
+                                <input
+                                  value={replayField3Value}
+                                  onChange={(event) => setReplayField3Value(event.target.value)}
+                                  placeholder="Giá trị 3..."
+                                  className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(8px,0.8vw,12px)] text-[#2d4e79] outline-none placeholder:text-[#5a7a9a]"
+                                />
+                              </div>
+                            </div>
+                            {/* Field 4 */}
+                            <div className="flex gap-2">
+                              <div className="relative w-1/2" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
+                                <input
+                                  value={replayField4Name}
+                                  onChange={(event) => setReplayField4Name(event.target.value)}
+                                  placeholder="Trường 4..."
+                                  className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(8px,0.8vw,12px)] text-[#2d4e79] outline-none placeholder:text-[#5a7a9a]"
+                                />
+                              </div>
+                              <div className="relative w-1/2" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
+                                <input
+                                  value={replayField4Value}
+                                  onChange={(event) => setReplayField4Value(event.target.value)}
+                                  placeholder="Giá trị 4..."
+                                  className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(8px,0.8vw,12px)] text-[#2d4e79] outline-none placeholder:text-[#5a7a9a]"
+                                />
+                              </div>
                             </div>
                             {/* Submit button */}
                             <div className="w-1/3 mx-auto">
                               <button
                                 type="button"
                                 onClick={() => {
-                                  console.log('Packet Replay:', { source: replaySource, packetNumber: replayPacketNumber, count: replayCount, mode: replayMode, delay: replayDelay })
-                                  setPacketReplayResult(`Replay: ${replaySource} | Packet: ${replayPacketNumber} | Count: ${replayCount} | Mode: ${replayMode} | Delay: ${replayDelay}ms`)
+                                  console.log('Packet Replay:', { 
+                                    packetNumber: replayPacketNumber, 
+                                    field1: { name: replayField1Name, value: replayField1Value },
+                                    field2: { name: replayField2Name, value: replayField2Value },
+                                    field3: { name: replayField3Name, value: replayField3Value },
+                                    field4: { name: replayField4Name, value: replayField4Value }
+                                  })
+                                  setPacketReplayResult(`Gói tin: ${replayPacketNumber} | ${replayField1Name}: ${replayField1Value} | ${replayField2Name}: ${replayField2Value} | ${replayField3Name}: ${replayField3Value} | ${replayField4Name}: ${replayField4Value}`)
                                 }}
                                 className="relative w-full"
                                 style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_03.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}
@@ -3358,8 +3464,8 @@ batman`)
                           </div>
                         )}
 
-                        {/* Làm giả tên miền (skill 1) */}
-                        {(droppedGameplaySkill === 'Làm giả tên miền' || droppedSkills.includes('Làm giả tên miền')) && (
+                        {/* Đánh giá tên miền giả mạo (skill 1) */}
+                        {(droppedGameplaySkill === 'Đánh giá tên miền giả mạo' || droppedSkills.includes('Đánh giá tên miền giả mạo')) && (
                           <div className="mt-[2%] flex flex-col gap-3">
                             <div className="text-[#233f66] text-[clamp(9px,0.9vw,14px)] font-semibold mb-1">
                               Nhập tên miền giả mạo
@@ -3413,25 +3519,18 @@ batman`)
                           </div>
                         )}
 
-                        {/* Chọn website giả mạo (skill 2) */}
-                        {(droppedGameplaySkill === 'Chọn website giả mạo' || droppedSkills.includes('Chọn website giả mạo')) && (
+                        {/* Tạo website giả mạo (skill 2) */}
+                        {(droppedGameplaySkill === 'Tạo website giả mạo' || droppedSkills.includes('Tạo website giả mạo')) && (
                           <div className="mt-[2%] flex flex-col gap-3">
                             <div className="text-[#233f66] text-[clamp(9px,0.9vw,14px)] font-semibold mb-1">
-                              Chọn website giả mạo
+                              Tạo website giả mạo
                             </div>
                             {/* Danh sách website để chọn */}
                             <div className="flex flex-col gap-2">
                               {[
                                 { id: 'facebook', name: 'Facebook', icon: '📘' },
                                 { id: 'google', name: 'Google', icon: '🔍' },
-                                { id: 'apple', name: 'Apple', icon: '🍎' },
-                                { id: 'microsoft', name: 'Microsoft', icon: '🪟' },
-                                { id: 'amazon', name: 'Amazon', icon: '📦' },
-                                { id: 'netflix', name: 'Netflix', icon: '🎬' },
-                                { id: 'paypal', name: 'PayPal', icon: '💰' },
-                                { id: 'instagram', name: 'Instagram', icon: '📷' },
-                                { id: 'twitter', name: 'Twitter', icon: '🐦' },
-                                { id: 'linkedin', name: 'LinkedIn', icon: '💼' },
+                                { id: 'microsoft', name: 'Microsoft', icon: '🪟' }
                               ].map((site) => (
                                 <button
                                   key={site.id}
@@ -3452,13 +3551,46 @@ batman`)
                           </div>
                         )}
 
-                        {/* Submit tổng - chỉ sáng khi có cả 2 skill */}
-                        {(droppedSkills.includes('Làm giả tên miền') && droppedSkills.includes('Chọn website giả mạo')) && (
+                        {/* Mã độc capcha */}
+                        {(droppedGameplaySkill === 'Mã độc capcha' || droppedSkills.includes('Mã độc capcha')) && (
+                          <div className="mt-[2%] flex flex-col gap-3">
+                            <div className="text-[#233f66] text-[clamp(9px,0.9vw,14px)] font-semibold mb-1">
+                              Mã độc capcha
+                            </div>
+                            {/* Submit button */}
+                            <div className="w-1/3 mx-auto">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  console.log('Capcha Malware')
+                                  setCapchaMalwareResult('Đã tạo mã độc capcha')
+                                }}
+                                className="relative w-full"
+                                style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_03.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}
+                              >
+                                <span className="text-white text-[clamp(9px,1vw,14px)] font-bold">Kích hoạt</span>
+                              </button>
+                            </div>
+                            {capchaMalwareResult && (
+                              <div className="p-[3%] bg-white/30 rounded text-[#233f66] text-[clamp(8px,0.85vw,13px)] break-words">
+                                {capchaMalwareResult}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Submit tổng - cho cả 2 skill và 3 skill */}
+                        {(droppedSkills.includes('Đánh giá tên miền giả mạo') && droppedSkills.includes('Tạo website giả mạo')) && (
                           <div className="mt-[2%] w-1/3 mx-auto">
                             <button
                               type="button"
                               onClick={() => {
-                                console.log('Submit Total:', { domain: fakeDomainInput, evaluation: domainEvaluationResult, website: selectedFakeWebsite })
+                                console.log('Submit Total:', { 
+                                  domain: fakeDomainInput, 
+                                  evaluation: domainEvaluationResult, 
+                                  website: selectedFakeWebsite,
+                                  capcha: droppedSkills.includes('Mã độc capcha') ? 'included' : 'not included'
+                                })
                               }}
                               className="relative w-full"
                               style={{ height: 'clamp(32px, 5vw, 48px)', backgroundImage: "url('/assets/pixel-office/button_03.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}
@@ -3468,8 +3600,8 @@ batman`)
                           </div>
                         )}
 
-                        {/* Empty drop zone hint */}
-                        {!droppedGameplaySkill && (
+                        {/* Empty drop zone hint - chỉ hiện khi chưa có skill nào */}
+                        {droppedSkills.length === 0 && (
                           <div className="flex items-center justify-center h-full text-[#3f5d85] text-[clamp(10px,1.2vw,18px)] font-semibold">
                             {activeExerciseTask.id === 1 ? 'Kéo thả skill vào đây' : 'Ô kéo thả skill'}
                           </div>
@@ -3515,16 +3647,30 @@ batman`)
                             draggable
                             onDragStart={(event) => event.dataTransfer.setData('text/plain', skill)}
                             onClick={() => {
-                              // Add to dropped skills (support multiple)
-                              if (!droppedSkills.includes(skill)) {
-                                setDroppedSkills(prev => [...prev, skill])
+                              // Nhóm 3 skill đặc biệt: Đánh giá tên miền giả mạo, Tạo website giả mạo, Mã độc capcha
+                              const isSpecialSkill = CAPCHA_SKILL_GROUP.includes(skill as typeof CAPCHA_SKILL_GROUP[number])
+                              const hasSpecialSkill = droppedSkills.some(s => CAPCHA_SKILL_GROUP.includes(s as typeof CAPCHA_SKILL_GROUP[number]))
+                              
+                              if (isSpecialSkill) {
+                                // Nếu đang có skill thường: không được thêm skill đặc biệt
+                                if (droppedSkills.length > 0 && !hasSpecialSkill) {
+                                  return
+                                }
+                                // Skill đặc biệt: thả cùng lúc được với các skill đặc biệt khác
+                                if (!droppedSkills.includes(skill)) {
+                                  setDroppedSkills(prev => [...prev, skill])
+                                }
+                              } else {
+                                // Skill thường: chỉ được thả độc lập (xóa tất cả skill cũ)
+                                setDroppedSkills([skill])
+                                setDroppedGameplaySkill(skill)
                               }
                               // Set as main skill if first one
                               if (droppedSkills.length === 0) {
                                 setDroppedGameplaySkill(skill)
                               }
                             }}
-                            className="flex h-[40px] md:h-[48px] w-full shrink-0 items-center justify-center px-3 text-center bg-no-repeat text-white text-[clamp(8px,1.08vw,18px)] font-bold"
+                            className="flex h-[40px] md:h-[48px] w-full shrink-0 items-center justify-center px-3 text-center bg-no-repeat text-white text-[clamp(6px,0.85vw,14px)] font-bold"
                             style={{ backgroundImage: "url('/assets/pixel-office/button_03.png')", backgroundSize: '100% 100%' }}
                           >
                             {skill}
@@ -3548,18 +3694,7 @@ batman`)
                     draggable={false}
                   />
                 </button>
-                <button
-                  onClick={() => { unlockAudio(); playHacSound(); }}
-                  className="absolute right-4 top-4 w-12 h-12 border-0 bg-transparent p-0 cursor-pointer"
-                  title="Phát âm thanh"
-                >
-                  <img
-                    src="/assets/pixel-office/loudspeaker.png"
-                    alt="Loa"
-                    className="w-full h-full object-contain"
-                    draggable={false}
-                  />
-                </button>
+                
               </div>
             </div>
           )}
@@ -3611,7 +3746,7 @@ batman`)
       {/* Top bar: agent tags + controls */}
       <div className="flex flex-col gap-2 p-3 md:p-4 border-b border-[var(--border)]">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-10 ">
             <span className="text-sm font-bold text-[var(--text)]">{t('pixelOffice.title')}</span>
             <button onClick={() => { unlockAudio(); playHacSound(); }}
               className="w-8 h-8 rounded-lg border border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--card)] transition-colors flex items-center justify-center cursor-pointer"

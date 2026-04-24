@@ -646,6 +646,40 @@ batman`)
   // Track multiple dropped skills
   const [droppedSkills, setDroppedSkills] = useState<string[]>([])
 
+  // Lưu trữ nội dung mô tả: { 1: "Nội dung bài 1", 2: "Nội dung bài 2", ... }
+  const [taskDescriptions, setTaskDescriptions] = useState<Record<number, string>>({})
+
+  useEffect(() => {
+    let isMounted = true; // Chống memory leak khi component unmount
+
+    const fetchDescriptions = async () => {
+      const descMap: Record<number, string> = {}
+      
+      // Chạy song song tất cả các request để tối ưu tốc độ load
+      await Promise.all(
+        EXERCISE_TASKS.map(async (task) => {
+          try {
+            const res = await fetch(`/description/${task.id}.txt`, { cache: 'no-store' })
+            if (res.ok) {
+              const content = await res.text()
+              descMap[task.id] = content.trim()
+            }
+          } catch (error) {
+            console.error(`Lỗi load description cho task ${task.id}:`, error)
+          }
+        })
+      )
+
+      if (isMounted) {
+        setTaskDescriptions(descMap)
+      }
+    }
+
+    void fetchDescriptions()
+    
+    return () => { isMounted = false }
+  }, [])
+
   // XOR data format options
   const XOR_DATA_FORMAT_OPTIONS = [
     { id: 'hex', name: 'Hex' },
@@ -2716,7 +2750,9 @@ batman`)
                       style={{ backgroundImage: "url('/assets/pixel-office/button_07.png')", backgroundSize: '100% 100%' }}
                     >
                       <div className="pixel-exercise-title absolute inset-[11%_3.8%_9%_3.8%] overflow-y-auto px-2 text-center text-[#233f66] text-[clamp(7px,1vw,16px)] font-bold tracking-wide whitespace-pre-wrap leading-[1.35]">
-                        Tham dự phiên họp có đồng chí Võ Thị Ánh Xuân, Bí thư Trung ương Đảng, Phó Chủ tịch nước, Phó Chủ tịch Thứ nhất Hội đồng; đồng chí Phạm Thị Thanh Trà, Bí thư Trung ương Đảng, Phó Thủ tướng Chính phủ; đồng chí Đỗ Thanh Bình, Ủy viên Trung ương Đảng, Bộ trưởng Bộ Nội vụ, Phó Chủ tịch Thường trực Hội đồng; các đồng chí Ủy viên Trung ương Đảng, lãnh đạo Mặt trận Tổ quốc Việt Nam, các bộ, ngành, cơ quan Trung ương là Ủy viên Hội đồng.Tham dự phiên họp có đồng chí Võ Thị Ánh Xuân, Bí thư Trung ương Đảng, Phó Chủ tịch nước, Phó Chủ tịch Thứ nhất Hội đồng; đồng chí Phạm Thị Thanh Trà, Bí thư Trung ương Đảng, Phó Thủ tướng Chính phủ; đồng chí Đỗ Thanh Bình, Ủy viên Trung ương Đảng, Bộ trưởng Bộ Nội vụ, Phó Chủ tịch Thường trực Hội đồng; các đồng chí Ủy viên Trung ương Đảng, lãnh đạo Mặt trận Tổ quốc Việt Nam, các bộ, ngành, cơ quan Trung ương là Ủy viên Hội đồng.Tham dự phiên họp có đồng chí Võ Thị Ánh Xuân, Bí thư Trung ương Đảng, Phó Chủ tịch nước, Phó Chủ tịch Thứ nhất Hội đồng; đồng chí Phạm Thị Thanh Trà, Bí thư Trung ương Đảng, Phó Thủ tướng Chính phủ; đồng chí Đỗ Thanh Bình, Ủy viên Trung ương Đảng, Bộ trưởng Bộ Nội vụ, Phó Chủ tịch Thường trực Hội đồng; các đồng chí Ủy viên Trung ương Đảng, lãnh đạo Mặt trận Tổ quốc Việt Nam, các bộ, ngành, cơ quan Trung ương là Ủy viên Hội đồng.Tham dự phiên họp có đồng chí Võ Thị Ánh Xuân, Bí thư Trung ương Đảng, Phó Chủ tịch nước, Phó Chủ tịch Thứ nhất Hội đồng; đồng chí Phạm Thị Thanh Trà, Bí thư Trung ương Đảng, Phó Thủ tướng Chính phủ; đồng chí Đỗ Thanh Bình, Ủy viên Trung ương Đảng, Bộ trưởng Bộ Nội vụ, Phó Chủ tịch Thường trực Hội đồng; các đồng chí Ủy viên Trung ương Đảng, lãnh đạo Mặt trận Tổ quốc Việt Nam, các bộ, ngành, cơ quan Trung ương là Ủy viên Hội đồng.Tham dự phiên họp có đồng chí Võ Thị Ánh Xuân, Bí thư Trung ương Đảng, Phó Chủ tịch nước, Phó Chủ tịch Thứ nhất Hội đồng; đồng chí Phạm Thị Thanh Trà, Bí thư Trung ương Đảng, Phó Thủ tướng Chính phủ; đồng chí Đỗ Thanh Bình, Ủy viên Trung ương Đảng, Bộ trưởng Bộ Nội vụ, Phó Chủ tịch Thường trực Hội đồng; các đồng chí Ủy viên Trung ương Đảng, lãnh đạo Mặt trận Tổ quốc Việt Nam, các bộ, ngành, cơ quan Trung ương là Ủy viên Hội đồng.Tham dự phiên họp có đồng chí Võ Thị Ánh Xuân, Bí thư Trung ương Đảng, Phó Chủ tịch nước, Phó Chủ tịch Thứ nhất Hội đồng; đồng chí Phạm Thị Thanh Trà, Bí thư Trung ương Đảng, Phó Thủ tướng Chính phủ; đồng chí Đỗ Thanh Bình, Ủy viên Trung ương Đảng, Bộ trưởng Bộ Nội vụ, Phó Chủ tịch Thường trực Hội đồng; các đồng chí Ủy viên Trung ương Đảng, lãnh đạo Mặt trận Tổ quốc Việt Nam, các bộ, ngành, cơ quan Trung ương là Ủy viên Hội đồng.
+                        {activeExerciseTask && taskDescriptions[activeExerciseTask.id] 
+                            ? taskDescriptions[activeExerciseTask.id] 
+                            : (activeExerciseTask?.content || "Đang tải dữ liệu nhiệm vụ...")}
                       </div>
                     </div>
 

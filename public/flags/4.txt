@@ -1,0 +1,1 @@
+blockchainptit{erc20_token_standard_implementation_success}

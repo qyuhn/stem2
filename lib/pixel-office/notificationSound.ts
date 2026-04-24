@@ -174,3 +174,18 @@ export function playHacSound(): void {
   hacAudio.currentTime = 0
   hacAudio.play().catch(() => {})
 }
+
+// Play lesson audio (giaidoan1.mp3) for Bài 1
+let lessonAudio: HTMLAudioElement | null = null
+
+export function playLessonAudio(): void {
+  if (typeof window === 'undefined') return
+  if (!soundEnabled) return
+  if (!lessonAudio) {
+    lessonAudio = new Audio('/sound/giaidoan1.mp3')
+    lessonAudio.preload = 'auto'
+    lessonAudio.volume = 1.0
+  }
+  lessonAudio.currentTime = 0
+  lessonAudio.play().catch(() => {})
+}

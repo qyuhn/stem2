@@ -20,13 +20,11 @@ import { getCatalogEntry, isRotatable } from '@/lib/pixel-office/layout/furnitur
 import { createDefaultLayout, migrateLayoutColors, serializeLayout } from '@/lib/pixel-office/layout/layoutSerializer'
 import {
   playDoneSound,
-  playBackgroundMusic,
-  stopBackgroundMusic,
-  skipToNextTrack,
   unlockAudio,
   setSoundEnabled,
   isSoundEnabled,
   playHacSound,
+  playLessonAudio,
 } from '@/lib/pixel-office/notificationSound'
 
 import { loadCharacterPNGs, loadWallPNG } from '@/lib/pixel-office/sprites/pngLoader'
@@ -134,8 +132,14 @@ function MorseCodeComponent({ morsePlaintext, setMorsePlaintext, morseResult, se
   const handleSubmit = () => {
     console.log('Morse Plaintext:', morsePlaintext)
     if (morsePlaintext) {
-      const result = morsePlaintext.toUpperCase().split('').map(c => morseCode[c] || c).join(' ')
-      setMorseResult(result)
+      // Logic: Đúng input morse "-- .- .... --- .-" (M-A-H-O-A)
+      const normalized = morsePlaintext.trim().replace(/\s+/g, ' ').toLowerCase()
+      if (normalized === '-- .- .... --- .-') {
+        setMorseResult('{matmatruongson}')
+      } else {
+        const result = morsePlaintext.toUpperCase().split('').map(c => morseCode[c] || c).join(' ')
+        setMorseResult(result)
+      }
     }
   }
 
@@ -146,7 +150,7 @@ function MorseCodeComponent({ morsePlaintext, setMorsePlaintext, morseResult, se
           value={morsePlaintext}
           onChange={(event) => setMorsePlaintext(event.target.value)}
           onKeyDown={handleInputKeyDown} // <-- Thêm sự kiện bắt âm thanh tại đây
-          placeholder="Nhập . hoặc - để tạo tín hiệu morse..."
+          placeholder="Nhập mã morse"
           className="absolute inset-0 w-full h-full border-0 bg-transparent px-[3%] text-[clamp(9px,0.9vw,14px)] text-[#2d4e79] outline-none placeholder:text-[#5a7a9a]"
           autoComplete="off"
         />
@@ -846,11 +850,31 @@ batman`)
     setExerciseScene('gameplay')
   }, [])
 
-  const handleGameplaySubmit = useCallback(() => {
+  const handleGameplaySubmit = useCallback(async () => {
     if (!activeExerciseTask) return
-    markExerciseCompleted(activeExerciseTask.id)
-    closeExerciseScene()
-  }, [activeExerciseTask, closeExerciseScene, markExerciseCompleted])
+    
+    // Validate flag from file
+    const userFlag = gameplayFlagInput.trim()
+    if (!userFlag) return
+    
+    try {
+      const res = await fetch(`/flags/${activeExerciseTask.id}.txt`, { cache: 'no-store' })
+      if (!res.ok) {
+        alert('Flag chưa chính xác. Thử lại!')
+        return
+      }
+      const correctFlag = (await res.text()).trim()
+      
+      if (userFlag === correctFlag) {
+        markExerciseCompleted(activeExerciseTask.id)
+        closeExerciseScene()
+      } else {
+        alert('Flag chưa chính xác. Thử lại!')
+      }
+    } catch {
+      alert('Flag chưa chính xác. Thử lại!')
+    }
+  }, [activeExerciseTask, gameplayFlagInput, closeExerciseScene, markExerciseCompleted])
 
   const handleDialogueBack = useCallback(() => {
     if (!activeDialogueLines.length) return
@@ -1061,7 +1085,6 @@ batman`)
     }
 
     return () => {
-      stopBackgroundMusic()
       cachedOfficeState = officeRef.current
       cachedEditorState = editorRef.current
       cachedSavedLayout = savedLayoutRef.current
@@ -1091,13 +1114,13 @@ batman`)
     cachedNextCharacterId = nextIdRef.current.current
   }, [officeReady])
 
-  useEffect(() => {
-    if (soundOn) {
-      void playBackgroundMusic()
-    } else {
-      stopBackgroundMusic()
-    }
-  }, [soundOn])
+  // useEffect(() => {
+  //   if (soundOn) {
+  //     void playBackgroundMusic()
+  //   } else {
+  //     stopBackgroundMusic()
+  //   }
+  // }, [soundOn])
 
 
   useEffect(() => {
@@ -1873,7 +1896,6 @@ batman`)
   const PHOTO_COUNT = 13
   const handleMouseDown = (e: React.MouseEvent) => {
     unlockAudio()
-    if (soundOn) void playBackgroundMusic()
     if (!canvasRef.current || !officeRef.current) return
     const office = officeRef.current
     const editor = editorRef.current
@@ -2452,11 +2474,6 @@ batman`)
     setSoundEnabled(newVal)
     setSoundOn(newVal)
     localStorage.setItem('pixel-office-sound', String(newVal))
-    if (newVal) {
-      void playBackgroundMusic()
-    } else {
-      stopBackgroundMusic()
-    }
   }, [])
 
   const resetView = useCallback(() => {
@@ -2795,13 +2812,16 @@ batman`)
                         }
                       }}
                     >
-                      {/* Loa: chỉ hiện ở bài 1, trong ô kéo thả, góc trên bên phải */}
+                      {/* Loa: chỉ hiện ở bài 1, trong ô kéo thả, góc trên bên phải - phát giaidoan1.mp3 */}
                       {activeExerciseTaskId === 1 && (
                         <button
                           type="button"
-                          onClick={() => toggleSound()}
+                          onClick={() => {
+                            unlockAudio()
+                            playLessonAudio()
+                          }}
                           className="absolute right-[2%] top-[2%] w-8 h-8 border-0 bg-transparent p-0 cursor-pointer z-50"
-                          title={soundOn ? 'Tắt loa' : 'Bật loa'}
+                          title="Nghe đoạn văn bản"
                         >
                           <img
                             src="/assets/pixel-office/loudspeaker.png"
@@ -2848,6 +2868,10 @@ batman`)
                           </div>
                         )}
 
+                        
+
+                        
+
                         {/* Giải mã hóa bằng từ điển */}
                         {droppedGameplaySkill === 'Giải mã hóa bằng từ điển' && (
                           <div className="mt-[2%] flex flex-col gap-3">
@@ -2882,7 +2906,7 @@ batman`)
                                   if (dictionaryDecodeText && xorHoaDataFormat) {
                                     // Logic: Đúng input "yhfundhcg" VÀ đúng từ điển "binary" (Tây Bắc)
                                     if (dictionaryDecodeText.toLowerCase() === 'yhfundhcg' && xorHoaDataFormat === 'binary') {
-                                      setDictionaryDecodeResult(`Kết quả giải mã: truongson`);
+                                      setDictionaryDecodeResult(`Kết quả giải mã: blockchainptit`);
                                     } else {
                                       setDictionaryDecodeResult(`Kết quả giải mã: ${dictionaryDecodeText}`);
                                     }
@@ -3012,7 +3036,12 @@ batman`)
                                 onClick={() => {
                                   console.log('Running Key Encrypt:', { plaintext: encryptRunningKeyPlaintext, key: encryptRunningKey })
                                   if (encryptRunningKeyPlaintext && encryptRunningKey) {
-                                    setEncryptRunningKeyResult(`Bản mã: ${encryptRunningKeyPlaintext} (khóa: ${encryptRunningKey})`)
+                                    // Logic: Đúng input "blockchainptit" VÀ đúng khóa "taybac"
+                                    if (encryptRunningKeyPlaintext.toLowerCase() === 'blockchainptit' && encryptRunningKey.toLowerCase() === 'taybac') {
+                                      setEncryptRunningKeyResult(`Bản mã: mahoa`)
+                                    } else {
+                                      setEncryptRunningKeyResult(`Bản mã: ${encryptRunningKeyPlaintext} (khóa: ${encryptRunningKey})`)
+                                    }
                                   }
                                 }}
                                 className="relative w-full"
@@ -3843,20 +3872,6 @@ batman`)
           </div>
           <div className="flex gap-2">
             <button onClick={toggleSound}
-              className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
-                soundOn ? 'bg-[var(--accent)]/10 border-[var(--accent)]/30 text-[var(--accent)]'
-                  : 'bg-[var(--card)] border-[var(--border)] text-[var(--text-muted)]'
-              }`}>
-              {soundOn ? '🔔' : '🔕'} {t('pixelOffice.sound')}
-            </button>
-            {soundOn && (
-              <button onClick={skipToNextTrack}
-                className="px-3 py-1.5 text-xs rounded-lg border transition-colors bg-[var(--card)] border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)] hover:border-[var(--accent)]"
-                title="下一首">
-                ⏭
-              </button>
-            )}
-            <button onClick={toggleEditMode}
               className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
                 isEditMode ? 'bg-[var(--accent)]/10 border-[var(--accent)]/30 text-[var(--accent)]'
                   : 'bg-[var(--card)] border-[var(--border)] text-[var(--text-muted)]'

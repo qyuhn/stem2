@@ -342,30 +342,6 @@ type ExerciseTask = {
   targetFallback?: { col: number; row: number; w: number; h: number }
 }
 
-const GAMEPLAY_SKILL_OPTIONS = [
-  'Giải mã hóa bằng từ điển',
-  'Giải mã hóa bằng XOR',
-  'Giải mã bằng khóa chạy',
-  'Mã hóa bằng khóa chạy',
-  'Biến ma trận số thành ảnh',
-  'Biến ma trận thành ma trận xoắn ốc',
-  'Phân cụm ma trận',
-  'Dò mật khẩu dựa trên từ vựng',
-  'Tạo mã morse',
-  'Dò tìm mật khẩu online',
-  'Dò mật khẩu theo quy tắc',
-  'Dò mật khẩu từ bàn phím',
-  'Mã độc keylogger',
-  'Chặn bắt gói tin',
-  'Phát lại gói tin',
-  'Đánh giá tên miền giả mạo',
-  'Tạo website giả mạo',
-  'Mã độc capcha',
-] as const
-
-// Skills that can only be dropped together
-const CAPCHA_SKILL_GROUP = ['Đánh giá tên miền giả mạo', 'Tạo website giả mạo', 'Mã độc capcha'] as const
-
 const EXERCISE_TASKS: ExerciseTask[] = [
   {
     id: 1,
@@ -424,6 +400,49 @@ const EXERCISE_TASKS: ExerciseTask[] = [
     targetUid: 'pc-l4',
   },
 ]
+
+// Định nghĩa các cấu trúc skill theo từng bài
+const SKILL_UNLOCK_RULES: Record<number, string[]> = {
+  // Mặc định: 5 skill (trước khi hoàn thành bài nào)
+  0: [
+    'Tạo mã morse',
+    'Giải mã hóa bằng từ điển',
+    'Mã hóa bằng khóa chạy',
+    'Giải mã bằng khóa chạy',
+    'Giải mã hóa bằng XOR',
+  ],
+  // Sau khi hoàn thành bài 1: +3 skill matrix
+  1: [
+    'Biến ma trận số thành ảnh',
+    'Biến ma trận thành ma trận xoắn ốc',
+    'Phân cụm ma trận',
+  ],
+  // Sau khi hoàn thành bài 2: +3 skill password
+  2: [
+    'Dò mật khẩu dựa trên từ vựng',
+    'Dò mật khẩu theo quy tắc',
+    'Dò mật khẩu từ bàn phím',
+  ],
+  // Sau khi hoàn thành bài 3: +5 skill web
+  3: [
+    'Dò tìm mật khẩu online',
+    'Chặn bắt gói tin',
+    'Mã độc capcha',
+    'Tạo website giả mạo',
+    'Đánh giá tên miền giả mạo',
+  ],
+  // Sau khi hoàn thành bài 4: +1 skill
+  4: [
+    'Phát lại gói tin',
+  ],
+  // Sau khi hoàn thành bài 7: +1 skill keylogger
+  7: [
+    'Mã độc keylogger',
+  ],
+}
+
+// Skills that can only be dropped together
+const CAPCHA_SKILL_GROUP = ['Đánh giá tên miền giả mạo', 'Tạo website giả mạo', 'Mã độc capcha'] as const
 
 type ExerciseBounds = { col: number; row: number; w: number; h: number }
 
@@ -718,6 +737,20 @@ batman`)
     [activeDialogueLines, dialogueLineIndex],
   )
   const isDialogueLineComplete = dialogueTypedLength >= activeDialogueLine.length
+
+  // Tính toán danh sách skill hiển thị dựa trên các bài đã hoàn thành
+  const availableSkills = useMemo(() => {
+    const result: string[] = []
+    // Luôn có 5 skill mặc định
+    result.push(...SKILL_UNLOCK_RULES[0])
+    // Thêm skill từ các bài đã hoàn thành
+    for (const completedId of exerciseCompletedIds) {
+      if (SKILL_UNLOCK_RULES[completedId]) {
+        result.push(...SKILL_UNLOCK_RULES[completedId])
+      }
+    }
+    return result
+  }, [exerciseCompletedIds])
 
   useEffect(() => {
     if (dialogueLineIndex < activeDialogueLines.length) return
@@ -3791,7 +3824,7 @@ batman`)
                   >
                     <div className="absolute left-[15%] right-[11.5%] top-[14.8%] bottom-[4.8%] overflow-y-auto pr-[2px]">
                       <div className="flex flex-col gap-[10px] pb-[4px]">
-                        {GAMEPLAY_SKILL_OPTIONS.map((skill) => (
+                        {availableSkills.map((skill) => (
                           <button
                             key={skill}
                             type="button"

@@ -33,13 +33,6 @@ import { loadCharacterPNGs, loadWallPNG } from '@/lib/pixel-office/sprites/pngLo
 import { useI18n } from '@/lib/i18n'
 import { EditorToolbar } from './components/EditorToolbar'
 import { EditActionBar } from './components/EditActionBar'
-import {
-  AgentCard,
-  type AgentCardAgent,
-  type AgentModelTestResult,
-  type AgentSessionTestResult,
-  type PlatformTestResult,
-} from '../components/agent-card'
 
 function formatTokens(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'
@@ -195,7 +188,15 @@ type AgentStats = {
   lastActive: number | null
 }
 
-type ConfigAgentCard = AgentCardAgent
+import {
+  AgentCard,
+  type AgentCardAgent,
+  type AgentModelTestResult,
+  type AgentSessionTestResult,
+  type PlatformTestResult,
+} from '../components/agent-card'
+
+export type ConfigAgentCard = AgentCardAgent
 
 function MiniSparkline({ data, width = 120, height = 24, color: fixedColor }: { data: number[]; width?: number; height?: number; color?: string }) {
   const hasData = data.some(v => v > 0)
@@ -2870,17 +2871,21 @@ batman`)
                                 <option value="morse">Từ điển sát nghĩa</option>
                                 <option value="vietnamese">Từ điển Ticte</option>
                                 <option value="binary">Từ điển Tây Bắc</option>
-                                
                               </select>
                             </div>
-                            {/* Button - 1/3 width */}
+                            {/* Button Giải mã */}
                             <div className="w-1/3 mx-auto">
                               <button
                                 type="button"
                                 onClick={() => {
-                                  console.log('Dictionary Decode:', dictionaryDecodeText, xorHoaDataFormat)
+                                  console.log('Dictionary Decode:', dictionaryDecodeText, xorHoaDataFormat);
                                   if (dictionaryDecodeText && xorHoaDataFormat) {
-                                    setDictionaryDecodeResult(`Kết quả giải mã: ${dictionaryDecodeText}`)
+                                    // Logic: Đúng input "yhfundhcg" VÀ đúng từ điển "binary" (Tây Bắc)
+                                    if (dictionaryDecodeText.toLowerCase() === 'yhfundhcg' && xorHoaDataFormat === 'binary') {
+                                      setDictionaryDecodeResult(`Kết quả giải mã: truongson`);
+                                    } else {
+                                      setDictionaryDecodeResult(`Kết quả giải mã: ${dictionaryDecodeText}`);
+                                    }
                                   }
                                 }}
                                 className="relative w-full"

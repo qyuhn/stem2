@@ -201,24 +201,10 @@ function NavItemIcon({ name, active }: { name: NavIconName; active: boolean }) {
 
 const NAV_ITEMS: { group: string; items: { href: string; icon: NavIconName; labelKey: string }[] }[] = [
   {
-    group: "nav.overview",
+    group: "nav.menu",
     items: [
-      { href: "/", icon: "agents", labelKey: "nav.agents" },
-      { href: "/pixel-office", icon: "pixelOffice", labelKey: "nav.pixelOffice" },
-      { href: "/models", icon: "models", labelKey: "nav.models" },
-    ],
-  },
-  {
-    group: "nav.monitor",
-    items: [
-      { href: "/sessions", icon: "sessions", labelKey: "nav.sessions" },
-      { href: "/stats", icon: "stats", labelKey: "nav.stats" },
-      { href: "/alerts", icon: "alerts", labelKey: "nav.alerts" },
-    ],
-  },
-  {
-    group: "nav.config",
-    items: [
+      { href: "/", icon: "pixelOffice", labelKey: "nav.office" },
+      { href: "/models", icon: "models", labelKey: "nav.description" },
       { href: "/skills", icon: "skills", labelKey: "nav.skills" },
     ],
   },

@@ -44,6 +44,26 @@ function formatMs(ms: number): string {
   return (ms / 1000).toFixed(1) + 's'
 }
 
+// stem-cpp API helper - same-origin proxy to simulation backend
+const STEM_SIM_PROXY_URL = '/api/stem-sim/run'
+async function callStemCpp(skillId: string, payload: Record<string, unknown>): Promise<{ ok: boolean; result: string; error?: string }> {
+  try {
+    const res = await fetch(STEM_SIM_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ skillId, ...payload }),
+      cache: 'no-store',
+    })
+    const data = await res.json()
+    if (data?.ok && data?.skillRun?.result) {
+      return { ok: true, result: data.skillRun.result }
+    }
+    return { ok: false, result: '', error: data?.error || data?.skillRun?.result || 'Unknown error' }
+  } catch (e) {
+    return { ok: false, result: '', error: String(e) }
+  }
+}
+
 // Morse Code Component với âm thanh local
 // Morse Code Component với âm thanh local (Real-time Morse Sound)
 function MorseCodeComponent({ morsePlaintext, setMorsePlaintext, morseResult, setMorseResult }: {
@@ -2970,14 +2990,19 @@ batman`)
                             <div className="w-1/3 mx-auto">
                               <button
                                 type="button"
-                                onClick={() => {
-                                  console.log('Dictionary Decode:', dictionaryDecodeText, xorHoaDataFormat);
+                                onClick={async () => {
+                                  console.log('Dictionary Decode:', dictionaryDecodeText, xorHoaDataFormat)
                                   if (dictionaryDecodeText && xorHoaDataFormat) {
-                                    // Logic: Đúng input "yhfundhcg" VÀ đúng từ điển "binary" (Tây Bắc)
-                                    if (dictionaryDecodeText.toLowerCase() === 'yhfundhcg' && xorHoaDataFormat === 'binary') {
-                                      setDictionaryDecodeResult(`Kết quả giải mã: blockchainptit`);
+                                    const cppRes = await callStemCpp('dict-decrypt', {
+                                      input: dictionaryDecodeText,
+                                      dictionary: xorHoaDataFormat,
+                                    })
+                                    if (cppRes.ok) {
+                                      setDictionaryDecodeResult(`Kết quả giải mã: ${cppRes.result}`)
+                                    } else if (dictionaryDecodeText.toLowerCase() === 'yhfundhcg' && xorHoaDataFormat === 'binary') {
+                                      setDictionaryDecodeResult(`Kết quả giải mã: blockchainptit`)
                                     } else {
-                                      setDictionaryDecodeResult(`Kết quả giải mã: ${dictionaryDecodeText}`);
+                                      setDictionaryDecodeResult(`Kết quả giải mã: ${dictionaryDecodeText}`)
                                     }
                                   }
                                 }}
@@ -3012,10 +3037,17 @@ batman`)
                             <div className="w-1/3 mx-auto">
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   console.log('XOR Hoa Decrypt:', { ciphertext: xorHoaCiphertext, dataFormat: xorHoaDataFormat, key: xorHoaKey, keyType: xorHoaKeyType })
                                   if (xorHoaCiphertext && xorHoaKey && xorHoaDataFormat && xorHoaKeyType) {
-                                    setXorHoaDecryptResult(`Bản rõ XOR: ${xorHoaCiphertext}`)
+                                    // Fetch from stem-cpp (fallback to mockup)
+                                    const cppRes = await callStemCpp('xor-decode', { input: xorHoaCiphertext, key: xorHoaKey })
+                                    if (cppRes.ok) {
+                                      setXorHoaDecryptResult(`Bản rõ XOR: ${cppRes.result}`)
+                                    } else {
+                                      // Fallback mockup
+                                      setXorHoaDecryptResult(`Bản rõ XOR: ${xorHoaCiphertext}`)
+                                    }
                                   }
                                 }}
                                 className="relative w-full"
@@ -3057,10 +3089,15 @@ batman`)
                             <div className="w-1/3 mx-auto">
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   console.log('Running Key Decrypt:', { ciphertext: runningKeyCiphertext, key: runningKeyKey })
                                   if (runningKeyCiphertext && runningKeyKey) {
-                                    setRunningKeyDecryptResult(`Bản rõ: ${runningKeyCiphertext} (khóa: ${runningKeyKey})`)
+                                    const cppRes = await callStemCpp('runkey-decode', { input: runningKeyCiphertext, key: runningKeyKey })
+                                    if (cppRes.ok) {
+                                      setRunningKeyDecryptResult(`Bản rõ: ${cppRes.result} (khóa: ${runningKeyKey})`)
+                                    } else {
+                                      setRunningKeyDecryptResult(`Bản rõ: ${runningKeyCiphertext} (khóa: ${runningKeyKey})`)
+                                    }
                                   }
                                 }}
                                 className="relative w-full"
@@ -3102,14 +3139,20 @@ batman`)
                             <div className="w-1/3 mx-auto">
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   console.log('Running Key Encrypt:', { plaintext: encryptRunningKeyPlaintext, key: encryptRunningKey })
                                   if (encryptRunningKeyPlaintext && encryptRunningKey) {
-                                    // Logic: Đúng input "blockchainptit" VÀ đúng khóa "taybac"
-                                    if (encryptRunningKeyPlaintext.toLowerCase() === 'blockchainptit' && encryptRunningKey.toLowerCase() === 'taybac') {
-                                      setEncryptRunningKeyResult(`Bản mã: mahoa`)
+                                    // Try stem-cpp first
+                                    const cppRes = await callStemCpp('runkey-encode', { input: encryptRunningKeyPlaintext, key: encryptRunningKey })
+                                    if (cppRes.ok) {
+                                      setEncryptRunningKeyResult(`Bản mã: ${cppRes.result}`)
                                     } else {
-                                      setEncryptRunningKeyResult(`Bản mã: ${encryptRunningKeyPlaintext} (khóa: ${encryptRunningKey})`)
+                                      // Fallback: existing hardcoded logic
+                                      if (encryptRunningKeyPlaintext.toLowerCase() === 'blockchainptit' && encryptRunningKey.toLowerCase() === 'taybac') {
+                                        setEncryptRunningKeyResult(`Bản mã: mahoa`)
+                                      } else {
+                                        setEncryptRunningKeyResult(`Bản mã: ${encryptRunningKeyPlaintext} (khóa: ${encryptRunningKey})`)
+                                      }
                                     }
                                   }
                                 }}
@@ -3179,11 +3222,17 @@ batman`)
                             <div className="w-1/3 mx-auto">
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   console.log('Matrix Image:', matrixImageData)
-                                  // Convert matrix to binary string for flag
-                                  const binaryString = matrixImageData.flat().join('')
-                                  setMatrixImageResult(`Ma trận đã gửi: ${binaryString.slice(0, 20)}...`)
+                                  // Send to stem-cpp
+                                  const cppRes = await callStemCpp('matrix-image', { matrix: matrixImageData })
+                                  if (cppRes.ok) {
+                                    setMatrixImageResult(`Kết quả: ${cppRes.result}`)
+                                  } else {
+                                    // Fallback: local binary string
+                                    const binaryString = matrixImageData.flat().join('')
+                                    setMatrixImageResult(`Ma trận đã gửi: ${binaryString.slice(0, 20)}...`)
+                                  }
                                 }}
                                 className="relative w-full"
                                 style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_03.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}
@@ -3251,10 +3300,15 @@ batman`)
                             <div className="w-1/3 mx-auto">
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   console.log('Matrix Cumulative:', matrixCumulativeData)
-                                  const binaryString = matrixCumulativeData.flat().join('')
-                                  setMatrixCumulativeResult(`Ma trận xoắn ốc: ${binaryString.slice(0, 20)}...`)
+                                  const cppRes = await callStemCpp('spiral-matrix', { input: JSON.stringify(matrixCumulativeData) })
+                                  if (cppRes.ok) {
+                                    setMatrixCumulativeResult(`Ma trận xoắn ốc: ${cppRes.result}`)
+                                  } else {
+                                    const binaryString = matrixCumulativeData.flat().join('')
+                                    setMatrixCumulativeResult(`Ma trận xoắn ốc: ${binaryString.slice(0, 20)}...`)
+                                  }
                                 }}
                                 className="relative w-full"
                                 style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_03.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}
@@ -3322,10 +3376,15 @@ batman`)
                             <div className="w-1/3 mx-auto">
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   console.log('Matrix Encrypt:', matrixEncryptData)
-                                  const binaryString = matrixEncryptData.flat().join('')
-                                  setMatrixEncryptResult(`Ma trận mã hóa: ${binaryString.slice(0, 20)}...`)
+                                  const cppRes = await callStemCpp('matrix-cluster', { input: JSON.stringify(matrixEncryptData) })
+                                  if (cppRes.ok) {
+                                    setMatrixEncryptResult(`Phân cụm: ${cppRes.result}`)
+                                  } else {
+                                    const binaryString = matrixEncryptData.flat().join('')
+                                    setMatrixEncryptResult(`Ma trận mã hóa: ${binaryString.slice(0, 20)}...`)
+                                  }
                                 }}
                                 className="relative w-full"
                                 style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_03.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}
@@ -3361,10 +3420,20 @@ batman`)
                             <div className="w-1/3 mx-auto">
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   console.log('Wordlist:', wordlistContent)
-                                  const words = wordlistContent.split('\n').filter(w => w.trim().length > 0)
-                                  setMatrixEncryptResult(`Wordlist: ${words.length} từ`)
+                                  const words = wordlistContent.split('\n').filter(w => w.trim().length > 0).slice(0, 50)
+                                  const cppRes = await callStemCpp('vocab-guess', {
+                                    input_candidates: words,
+                                    stored_secret: 'admin',
+                                    max_depth: 4,
+                                    max_candidates: 200,
+                                  })
+                                  if (cppRes.ok) {
+                                    setMatrixEncryptResult(`Kết quả: ${cppRes.result}`)
+                                  } else {
+                                    setMatrixEncryptResult(`Wordlist: ${words.length} từ`)
+                                  }
                                 }}
                                 className="relative w-full"
                                 style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_03.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}
@@ -3401,9 +3470,14 @@ batman`)
                             <div className="w-1/3 mx-auto">
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   console.log('Password Search:', { keyword: passwordSearchKeyword })
-                                  setPasswordSearchResult(`Đã tìm: ${passwordSearchKeyword}`)
+                                  const cppRes = await callStemCpp('online-finder', { input: passwordSearchKeyword })
+                                  if (cppRes.ok) {
+                                    setPasswordSearchResult(`Kết quả: ${cppRes.result}`)
+                                  } else {
+                                    setPasswordSearchResult(`Đã tìm: ${passwordSearchKeyword}`)
+                                  }
                                 }}
                                 className="relative w-full"
                                 style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_03.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}
@@ -3439,9 +3513,20 @@ batman`)
                             <div className="w-1/3 mx-auto">
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   console.log('Password Rule:', passwordRuleSelection)
-                                  setPasswordRuleResult(`Quy tắc: ${passwordRuleSelection}`)
+                                  const candidates = wordlistContent.split('\n').map(w => w.trim()).filter(Boolean).slice(0, 50)
+                                  const cppRes = await callStemCpp('rule-guess', {
+                                    input_candidates: candidates,
+                                    stored_secret: passwordSearchKeyword || 'M4trix_2025',
+                                    max_depth: 4,
+                                    max_candidates: 300,
+                                  })
+                                  if (cppRes.ok) {
+                                    setPasswordRuleResult(`Kết quả: ${cppRes.result}`)
+                                  } else {
+                                    setPasswordRuleResult(`Quy tắc: ${passwordRuleSelection}`)
+                                  }
                                 }}
                                 className="relative w-full"
                                 style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_03.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}
@@ -3464,9 +3549,19 @@ batman`)
                             <div className="w-1/3 mx-auto">
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   console.log('Keyboard Password')
-                                  setKeyboardPasswordResult('Đã dò mật khẩu từ bàn phím')
+                                  const candidates = wordlistContent.split('\n').map(w => w.trim()).filter(Boolean).slice(0, 50)
+                                  const cppRes = await callStemCpp('keyboard-guess', {
+                                    input_candidates: candidates,
+                                    stored_secret: 'qwer',
+                                    max_depth: 4,
+                                  })
+                                  if (cppRes.ok) {
+                                    setKeyboardPasswordResult(`Kết quả: ${cppRes.result}`)
+                                  } else {
+                                    setKeyboardPasswordResult('Đã dò mật khẩu từ bàn phím')
+                                  }
                                 }}
                                 className="relative w-full"
                                 style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_03.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}
@@ -3489,9 +3584,14 @@ batman`)
                             <div className="w-1/3 mx-auto">
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   console.log('Keylogger')
-                                  setKeyloggerResult('Đã phân tích mã độc keylogger')
+                                  const cppRes = await callStemCpp('keylogger', {})
+                                  if (cppRes.ok) {
+                                    setKeyloggerResult(`Kết quả: ${cppRes.result}`)
+                                  } else {
+                                    setKeyloggerResult('Đã phân tích mã độc keylogger')
+                                  }
                                 }}
                                 className="relative w-full"
                                 style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_03.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}
@@ -3514,9 +3614,14 @@ batman`)
                             <div className="w-1/3 mx-auto">
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   console.log('Packet Capture')
-                                  setPacketCaptureResult('Đã chặn bắt gói tin')
+                                  const cppRes = await callStemCpp('packet-sniff', {})
+                                  if (cppRes.ok) {
+                                    setPacketCaptureResult(`Kết quả: ${cppRes.result}`)
+                                  } else {
+                                    setPacketCaptureResult('Đã chặn bắt gói tin')
+                                  }
                                 }}
                                 className="relative w-full"
                                 style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_03.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}
@@ -3624,7 +3729,7 @@ batman`)
                             <div className="w-1/3 mx-auto">
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   console.log('Packet Replay:', { 
                                     packetNumber: replayPacketNumber, 
                                     field1: { name: replayField1Name, value: replayField1Value },
@@ -3632,7 +3737,22 @@ batman`)
                                     field3: { name: replayField3Name, value: replayField3Value },
                                     field4: { name: replayField4Name, value: replayField4Value }
                                   })
-                                  setPacketReplayResult(`Gói tin: ${replayPacketNumber} | ${replayField1Name}: ${replayField1Value} | ${replayField2Name}: ${replayField2Value} | ${replayField3Name}: ${replayField3Value} | ${replayField4Name}: ${replayField4Value}`)
+                                  // Build modified_fields array
+                                  const modifiedFields = []
+                                  if (replayField1Name && replayField1Value) modifiedFields.push({ name: replayField1Name, value: replayField1Value })
+                                  if (replayField2Name && replayField2Value) modifiedFields.push({ name: replayField2Name, value: replayField2Value })
+                                  if (replayField3Name && replayField3Value) modifiedFields.push({ name: replayField3Name, value: replayField3Value })
+                                  if (replayField4Name && replayField4Value) modifiedFields.push({ name: replayField4Name, value: replayField4Value })
+
+                                  const cppRes = await callStemCpp('packet-replay', {
+                                    packet_count: parseInt(replayPacketNumber) || 0,
+                                    modified_fields: modifiedFields,
+                                  })
+                                  if (cppRes.ok) {
+                                    setPacketReplayResult(`Kết quả: ${cppRes.result}`)
+                                  } else {
+                                    setPacketReplayResult(`Gói tin: ${replayPacketNumber} | ${replayField1Name}: ${replayField1Value} | ${replayField2Name}: ${replayField2Value} | ${replayField3Name}: ${replayField3Value} | ${replayField4Name}: ${replayField4Value}`)
+                                  }
                                 }}
                                 className="relative w-full"
                                 style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_03.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}
@@ -3667,13 +3787,21 @@ batman`)
                             <div className="w-1/3 mx-auto">
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   console.log('Evaluate Domain:', fakeDomainInput)
                                   if (fakeDomainInput) {
-                                    // Simple evaluation - calculate similarity score
+                                    // Try stem-cpp first
+                                    const cppRes = await callStemCpp('domain-spoof', {
+                                      origin_domain: 'facebook.com',
+                                      suspect_domain: fakeDomainInput,
+                                    })
+                                    if (cppRes.ok) {
+                                      setDomainEvaluationResult(`Kết quả: ${cppRes.result}`)
+                                      return
+                                    }
+                                    // Fallback: local scoring logic
                                     const domain = fakeDomainInput.toLowerCase()
                                     let score = 0
-                                    // Check for common target domains
                                     if (domain.includes('facebook') || domain.includes('fb')) score += 30
                                     if (domain.includes('google') || domain.includes('gogle') || domain.includes('googel')) score += 30
                                     if (domain.includes('apple') || domain.includes('appple') || domain.includes('aple')) score += 30
@@ -3681,9 +3809,8 @@ batman`)
                                     if (domain.includes('amazon') || domain.includes('amaz0n')) score += 30
                                     if (domain.includes('netflix')) score += 30
                                     if (domain.includes('paypal') || domain.includes('paypa1')) score += 30
-                                    // Check for typosquatting indicators
-                                    if (domain.replace(/[aeio]/g, '').length < domain.length - 2) score += 10 // letter substitution
-                                    if (/[0-9]/.test(domain)) score += 5 // number substitution
+                                    if (domain.replace(/[aeio]/g, '').length < domain.length - 2) score += 10
+                                    if (/[0-9]/.test(domain)) score += 5
                                     if (domain.length > 10) score += 5
                                     score = Math.min(score, 100)
                                     setDomainEvaluationResult(`Độ giả mạo: ${score}%`)
@@ -3719,7 +3846,15 @@ batman`)
                                 <button
                                   key={site.id}
                                   type="button"
-                                  onClick={() => setSelectedFakeWebsite(site.id)}
+                                  onClick={async () => {
+                                  console.log('Select fake website:', site.id)
+                                  setSelectedFakeWebsite(site.id)
+                                  // Call stem-cpp to create phishing site workflow
+                                  const cppRes = await callStemCpp('phish-site-pick', { target: site.id })
+                                  if (!cppRes.ok) {
+                                    console.log('Phish site created:', site.id)
+                                  }
+                                }}
                                   className={`flex items-center gap-2 px-3 py-2 rounded border text-[clamp(8px,0.85vw,13px)] ${selectedFakeWebsite === site.id ? 'bg-[#2d4e79] text-white' : 'bg-white/30 text-[#233f66] border-[#233f66]'}`}
                                 >
                                   <span>{site.icon}</span>
@@ -3745,9 +3880,14 @@ batman`)
                             <div className="w-1/3 mx-auto">
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   console.log('Capcha Malware')
-                                  setCapchaMalwareResult('Đã tạo mã độc capcha')
+                                  const cppRes = await callStemCpp('captcha-malware', {})
+                                  if (cppRes.ok) {
+                                    setCapchaMalwareResult(`Kết quả: ${cppRes.result}`)
+                                  } else {
+                                    setCapchaMalwareResult('Đã tạo mã độc capcha')
+                                  }
                                 }}
                                 className="relative w-full"
                                 style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_03.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}

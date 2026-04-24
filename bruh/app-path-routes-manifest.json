@@ -1,0 +1,12 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/api/pixel-office/contributions/route": "/api/pixel-office/contributions",
+  "/api/pixel-office/layout/route": "/api/pixel-office/layout",
+  "/api/pixel-office/tracks/route": "/api/pixel-office/tracks",
+  "/api/pixel-office/version/route": "/api/pixel-office/version",
+  "/models/page": "/models",
+  "/page": "/",
+  "/pixel-office/page": "/pixel-office",
+  "/skills/page": "/skills"
+}

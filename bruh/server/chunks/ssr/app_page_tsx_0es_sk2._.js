@@ -1,0 +1,3 @@
+module.exports=[60350,a=>{"use strict";var b=a.i(34020),c=a.i(71938),d=a.i(80470);a.s(["default",0,function(){let a=(0,d.useRouter)();return(0,c.useEffect)(()=>{a.replace("/pixel-office")},[a]),(0,b.jsx)("div",{className:"min-h-screen flex items-center justify-center",children:(0,b.jsx)("p",{className:"text-[var(--text-muted)]",children:"Đang chuyển đến Pixel Office..."})})}])}];
+
+//# sourceMappingURL=app_page_tsx_0es_sk2._.js.map

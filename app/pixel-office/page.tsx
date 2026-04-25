@@ -510,6 +510,9 @@ export default function PixelOfficePage() {
   const prevAgentStatesRef = useRef<Map<string, string>>(new Map(cachedPrevAgentStates))
   const seenSubagentEventKeysRef = useRef<Map<string, number>>(new Map())
 
+
+  
+
   const [agents, setAgents] = useState<AgentActivity[]>(cachedAgents)
   const [hoveredAgentId, setHoveredAgentId] = useState<number | null>(null)
   const mousePosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
@@ -675,6 +678,7 @@ batman`)
   // Đánh giá tên miền giả mạo inputs (skill 1)
   const [fakeDomainInput, setFakeDomainInput] = useState('')
   const [domainEvaluationResult, setDomainEvaluationResult] = useState('')
+  const [selectedOriginDomain, setSelectedOriginDomain] = useState('')
 
   // Tạo website giả mạo inputs (skill 2)
   const [selectedFakeWebsite, setSelectedFakeWebsite] = useState('')
@@ -3774,6 +3778,27 @@ batman`)
                             <div className="text-[#233f66] text-[clamp(9px,0.9vw,14px)] font-semibold mb-1">
                               Nhập tên miền giả mạo
                             </div>
+                            {/* Chọn tên miền gốc */}
+                            <div className="flex flex-col gap-1">
+                              <div className="text-[#233f66] text-[clamp(8px,0.8vw,12px)]">Chọn tên miền gốc:</div>
+                              <div className="flex gap-2">
+                                {[
+                                  { id: 'facebook.com', name: 'Facebook', icon: '📘' },
+                                  { id: 'google.com', name: 'Google', icon: '🔍' },
+                                  { id: 'microsoft.com', name: 'Microsoft', icon: '🪟' }
+                                ].map((site) => (
+                                  <button
+                                    key={site.id}
+                                    type="button"
+                                    onClick={() => setSelectedOriginDomain(site.id)}
+                                    className={`flex items-center gap-1 px-2 py-1 rounded border text-[clamp(7px,0.75vw,11px)] ${selectedOriginDomain === site.id ? 'bg-[#2d4e79] text-white' : 'bg-white/30 text-[#233f66] border-[#233f66]'}`}
+                                  >
+                                    <span>{site.icon}</span>
+                                    <span>{site.name}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
                             {/* Input tên miền giả mạo */}
                             <div className="relative w-full" style={{ height: 'clamp(28px, 4vw, 40px)', backgroundImage: "url('/assets/pixel-office/button_06.png')", backgroundSize: '100% 100%', backgroundPosition: 'center' }}>
                               <input
@@ -3788,11 +3813,12 @@ batman`)
                               <button
                                 type="button"
                                 onClick={async () => {
-                                  console.log('Evaluate Domain:', fakeDomainInput)
-                                  if (fakeDomainInput) {
+                                  console.log('Evaluate Domain:', fakeDomainInput, 'vs origin:', selectedOriginDomain)
+                                  if (fakeDomainInput && selectedOriginDomain) {
+                                    const originDomain = selectedOriginDomain
                                     // Try stem-cpp first
                                     const cppRes = await callStemCpp('domain-spoof', {
-                                      origin_domain: 'facebook.com',
+                                      origin_domain: originDomain,
                                       suspect_domain: fakeDomainInput,
                                     })
                                     if (cppRes.ok) {
@@ -3801,11 +3827,17 @@ batman`)
                                     }
                                     // Fallback: local scoring logic
                                     const domain = fakeDomainInput.toLowerCase()
+                                    const origin = originDomain.toLowerCase().replace('.com', '')
                                     let score = 0
-                                    if (domain.includes('facebook') || domain.includes('fb')) score += 30
-                                    if (domain.includes('google') || domain.includes('gogle') || domain.includes('googel')) score += 30
-                                    if (domain.includes('apple') || domain.includes('appple') || domain.includes('aple')) score += 30
-                                    if (domain.includes('microsoft') || domain.includes('microsft')) score += 30
+                                    if (origin === 'facebook' || origin === 'fb') {
+                                      if (domain.includes('facebook') || domain.includes('fb')) score += 30
+                                    }
+                                    if (origin === 'google') {
+                                      if (domain.includes('google') || domain.includes('gogle') || domain.includes('googel')) score += 30
+                                    }
+                                    if (origin === 'microsoft') {
+                                      if (domain.includes('microsoft') || domain.includes('microsft')) score += 30
+                                    }
                                     if (domain.includes('amazon') || domain.includes('amaz0n')) score += 30
                                     if (domain.includes('netflix')) score += 30
                                     if (domain.includes('paypal') || domain.includes('paypa1')) score += 30
@@ -3876,7 +3908,7 @@ batman`)
                             <div className="text-[#233f66] text-[clamp(9px,0.9vw,14px)] font-semibold mb-1">
                               Mã độc capcha
                             </div>
-                            {/* Submit button */}
+                            {/* Kích hoạt button */}
                             <div className="w-1/3 mx-auto">
                               <button
                                 type="button"
@@ -3924,7 +3956,7 @@ batman`)
                           </div>
                         )}
 
-                        {/* Empty drop zone hint - chỉ hiện khi chưa có skill nào */}
+                        {/* Chỉ hiển thị hint khi chưa có skill nào */}
                         {droppedSkills.length === 0 && (
                           <div className="flex items-center justify-center h-full text-[#3f5d85] text-[clamp(10px,1.2vw,18px)] font-semibold">
                             {activeExerciseTask.id === 1 ? 'Kéo thả skill vào đây' : 'Ô kéo thả skill'}

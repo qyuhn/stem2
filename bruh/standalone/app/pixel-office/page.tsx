@@ -198,7 +198,7 @@ import {
   type AgentModelTestResult,
   type AgentSessionTestResult,
   type PlatformTestResult,
-} from '../components/agent-card'
+} from './components/agent-card'
 
 export type ConfigAgentCard = AgentCardAgent
 

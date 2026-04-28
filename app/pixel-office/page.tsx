@@ -2997,10 +2997,16 @@ batman`)
                                 onClick={async () => {
                                   console.log('Dictionary Decode:', dictionaryDecodeText, xorHoaDataFormat)
                                   if (dictionaryDecodeText && xorHoaDataFormat) {
-                                    const cppRes = await callStemCpp('dict-decrypt', {
-                                      input: dictionaryDecodeText,
-                                      dictionary: xorHoaDataFormat,
-                                    })
+                                  // Map UI dictionary values to stem-cpp expected values
+                                  const dictMap: Record<string, string> = {
+                                    morse: 'sat_nghia',
+                                    vietnamese: 'ti_te',
+                                    binary: 'tay_bac',
+                                  }
+                                  const cppRes = await callStemCpp('dict-decrypt', {
+                                    input: dictionaryDecodeText,
+                                    dictionary: dictMap[xorHoaDataFormat] || xorHoaDataFormat,
+                                  })
                                     if (cppRes.ok) {
                                       setDictionaryDecodeResult(`Kết quả giải mã: ${cppRes.result}`)
                                     } else if (dictionaryDecodeText.toLowerCase() === 'yhfundhcg' && xorHoaDataFormat === 'binary') {
@@ -3096,7 +3102,7 @@ batman`)
                                 onClick={async () => {
                                   console.log('Running Key Decrypt:', { ciphertext: runningKeyCiphertext, key: runningKeyKey })
                                   if (runningKeyCiphertext && runningKeyKey) {
-                                    const cppRes = await callStemCpp('runkey-decode', { input: runningKeyCiphertext, key: runningKeyKey })
+                                    const cppRes = await callStemCpp('runkey-decode', { input: runningKeyCiphertext, running_key: runningKeyKey })
                                     if (cppRes.ok) {
                                       setRunningKeyDecryptResult(`Bản rõ: ${cppRes.result} (khóa: ${runningKeyKey})`)
                                     } else {
@@ -3147,7 +3153,7 @@ batman`)
                                   console.log('Running Key Encrypt:', { plaintext: encryptRunningKeyPlaintext, key: encryptRunningKey })
                                   if (encryptRunningKeyPlaintext && encryptRunningKey) {
                                     // Try stem-cpp first
-                                    const cppRes = await callStemCpp('runkey-encode', { input: encryptRunningKeyPlaintext, key: encryptRunningKey })
+                                    const cppRes = await callStemCpp('runkey-encode', { input: encryptRunningKeyPlaintext, running_key: encryptRunningKey })
                                     if (cppRes.ok) {
                                       setEncryptRunningKeyResult(`Bản mã: ${cppRes.result}`)
                                     } else {
@@ -3520,7 +3526,14 @@ batman`)
                                 onClick={async () => {
                                   console.log('Password Rule:', passwordRuleSelection)
                                   const candidates = wordlistContent.split('\n').map(w => w.trim()).filter(Boolean).slice(0, 50)
+                                  // Map UI rule values to stem-cpp expected rule_type
+                                  const ruleTypeMap: Record<string, string> = {
+                                    adjacent_numbers: 'so_gan_nhau',
+                                    adjacent_letters: 'chu_gan_nhau',
+                                    even_spacing: 'chu_cach_deu',
+                                  }
                                   const cppRes = await callStemCpp('rule-guess', {
+                                    rule_type: ruleTypeMap[passwordRuleSelection] || 'chu_gan_nhau',
                                     input_candidates: candidates,
                                     stored_secret: passwordSearchKeyword || 'M4trix_2025',
                                     max_depth: 4,
@@ -3741,12 +3754,12 @@ batman`)
                                     field3: { name: replayField3Name, value: replayField3Value },
                                     field4: { name: replayField4Name, value: replayField4Value }
                                   })
-                                  // Build modified_fields array
-                                  const modifiedFields = []
-                                  if (replayField1Name && replayField1Value) modifiedFields.push({ name: replayField1Name, value: replayField1Value })
-                                  if (replayField2Name && replayField2Value) modifiedFields.push({ name: replayField2Name, value: replayField2Value })
-                                  if (replayField3Name && replayField3Value) modifiedFields.push({ name: replayField3Name, value: replayField3Value })
-                                  if (replayField4Name && replayField4Value) modifiedFields.push({ name: replayField4Name, value: replayField4Value })
+                                  // Build modified_fields array (stem-cpp expects array of strings)
+                                  const modifiedFields: string[] = []
+                                  if (replayField1Name) modifiedFields.push(replayField1Name)
+                                  if (replayField2Name) modifiedFields.push(replayField2Name)
+                                  if (replayField3Name) modifiedFields.push(replayField3Name)
+                                  if (replayField4Name) modifiedFields.push(replayField4Name)
 
                                   const cppRes = await callStemCpp('packet-replay', {
                                     packet_count: parseInt(replayPacketNumber) || 0,
@@ -3882,7 +3895,7 @@ batman`)
                                   console.log('Select fake website:', site.id)
                                   setSelectedFakeWebsite(site.id)
                                   // Call stem-cpp to create phishing site workflow
-                                  const cppRes = await callStemCpp('phish-site-pick', { target: site.id })
+                                  const cppRes = await callStemCpp('phish-site-pick', { input: site.id })
                                   if (!cppRes.ok) {
                                     console.log('Phish site created:', site.id)
                                   }

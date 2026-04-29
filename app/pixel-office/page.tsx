@@ -185,11 +185,6 @@ function MorseCodeComponent({ morsePlaintext, setMorsePlaintext, morseResult, se
           <span className="text-white text-[clamp(9px,1vw,14px)] font-bold">Submit</span>
         </button>
       </div>
-      {morseResult && (
-        <div className="p-[3%] bg-white/30 rounded text-[#233f66] text-[clamp(8px,0.85vw,13px)] break-words">
-          {morseResult}
-        </div>
-      )}
     </div>
   )
 }
@@ -3014,6 +3009,7 @@ batman`)
                                     } else {
                                       setDictionaryDecodeResult(`Kết quả giải mã: ${dictionaryDecodeText}`)
                                     }
+
                                   }
                                 }}
                                 className="relative w-full"
@@ -3022,11 +3018,6 @@ batman`)
                                 <span className="text-white text-[clamp(9px,1vw,14px)] font-bold">Giải mã</span>
                               </button>
                             </div>
-                            {dictionaryDecodeResult && (
-                              <div className="p-[3%] bg-white/30 rounded text-[#233f66] text-[clamp(8px,0.85vw,13px)] break-words">
-                                {dictionaryDecodeResult}
-                              </div>
-                            )}
                           </div>
                         )}
 
@@ -3066,11 +3057,6 @@ batman`)
                                 <span className="text-white text-[clamp(9px,1vw,14px)] font-bold">Submit</span>
                               </button>
                             </div>
-                            {xorHoaDecryptResult && (
-                              <div className="p-[3%] bg-white/30 rounded text-[#233f66] text-[clamp(8px,0.85vw,13px)] break-words">
-                                {xorHoaDecryptResult}
-                              </div>
-                            )}
                           </div>
                         )}
 
@@ -3116,11 +3102,6 @@ batman`)
                                 <span className="text-white text-[clamp(9px,1vw,14px)] font-bold">Giải mã</span>
                               </button>
                             </div>
-                            {runningKeyDecryptResult && (
-                              <div className="p-[3%] bg-white/30 rounded text-[#233f66] text-[clamp(8px,0.85vw,13px)] break-words">
-                                {runningKeyDecryptResult}
-                              </div>
-                            )}
                           </div>
                         )}
 
@@ -3172,11 +3153,6 @@ batman`)
                                 <span className="text-white text-[clamp(9px,1vw,14px)] font-bold">Submit</span>
                               </button>
                             </div>
-                            {encryptRunningKeyResult && (
-                              <div className="p-[3%] bg-white/30 rounded text-[#233f66] text-[clamp(8px,0.85vw,13px)] break-words">
-                                {encryptRunningKeyResult}
-                              </div>
-                            )}
                           </div>
                         )}
 
@@ -3250,11 +3226,6 @@ batman`)
                                 <span className="text-white text-[clamp(9px,1vw,14px)] font-bold">Submit</span>
                               </button>
                             </div>
-                            {matrixImageResult && (
-                              <div className="p-[3%] bg-white/30 rounded text-[#233f66] text-[clamp(8px,0.85vw,13px)] break-words">
-                                {matrixImageResult}
-                              </div>
-                            )}
                           </div>
                         )}
 
@@ -3326,11 +3297,6 @@ batman`)
                                 <span className="text-white text-[clamp(9px,1vw,14px)] font-bold">Submit</span>
                               </button>
                             </div>
-                            {matrixCumulativeResult && (
-                              <div className="p-[3%] bg-white/30 rounded text-[#233f66] text-[clamp(8px,0.85vw,13px)] break-words">
-                                {matrixCumulativeResult}
-                              </div>
-                            )}
                           </div>
                         )}
 
@@ -3402,11 +3368,6 @@ batman`)
                                 <span className="text-white text-[clamp(9px,1vw,14px)] font-bold">Submit</span>
                               </button>
                             </div>
-                            {matrixEncryptResult && (
-                              <div className="p-[3%] bg-white/30 rounded text-[#233f66] text-[clamp(8px,0.85vw,13px)] break-words">
-                                {matrixEncryptResult}
-                              </div>
-                            )}
                           </div>
                         )}
 
@@ -3451,11 +3412,6 @@ batman`)
                                 <span className="text-white text-[clamp(9px,1vw,14px)] font-bold">Submit</span>
                               </button>
                             </div>
-                            {matrixEncryptResult && (
-                              <div className="p-[3%] bg-white/30 rounded text-[#233f66] text-[clamp(8px,0.85vw,13px)] break-words">
-                                {matrixEncryptResult}
-                              </div>
-                            )}
                           </div>
                         )}
 
@@ -3495,11 +3451,6 @@ batman`)
                                 <span className="text-white text-[clamp(9px,1vw,14px)] font-bold">Submit</span>
                               </button>
                             </div>
-                            {passwordSearchResult && (
-                              <div className="p-[3%] bg-white/30 rounded text-[#233f66] text-[clamp(8px,0.85vw,13px)] break-words">
-                                {passwordSearchResult}
-                              </div>
-                            )}
                           </div>
                         )}
 
@@ -3551,11 +3502,6 @@ batman`)
                                 <span className="text-white text-[clamp(7px,0.8vw,12px)] font-bold">Submit</span>
                               </button>
                             </div>
-                            {passwordRuleResult && (
-                              <div className="p-[3%] bg-white/30 rounded text-[#233f66] text-[clamp(6px,0.7vw,10px)] break-words">
-                                {passwordRuleResult}
-                              </div>
-                            )}
                           </div>
                         )}
 
@@ -3586,11 +3532,6 @@ batman`)
                                 <span className="text-white text-[clamp(7px,0.8vw,12px)] font-bold">Submit</span>
                               </button>
                             </div>
-                            {keyboardPasswordResult && (
-                              <div className="p-[3%] bg-white/30 rounded text-[#233f66] text-[clamp(6px,0.7vw,10px)] break-words">
-                                {keyboardPasswordResult}
-                              </div>
-                            )}
                           </div>
                         )}
 
@@ -3616,11 +3557,6 @@ batman`)
                                 <span className="text-white text-[clamp(7px,0.8vw,12px)] font-bold">Submit</span>
                               </button>
                             </div>
-                            {keyloggerResult && (
-                              <div className="p-[3%] bg-white/30 rounded text-[#233f66] text-[clamp(6px,0.7vw,10px)] break-words">
-                                {keyloggerResult}
-                              </div>
-                            )}
                           </div>
                         )}
 
@@ -3646,11 +3582,6 @@ batman`)
                                 <span className="text-white text-[clamp(9px,1vw,14px)] font-bold">Submit</span>
                               </button>
                             </div>
-                            {packetCaptureResult && (
-                              <div className="p-[3%] bg-white/30 rounded text-[#233f66] text-[clamp(8px,0.85vw,13px)] break-words">
-                                {packetCaptureResult}
-                              </div>
-                            )}
                           </div>
                         )}
 
@@ -3777,11 +3708,6 @@ batman`)
                                 <span className="text-white text-[clamp(9px,1vw,14px)] font-bold">Submit</span>
                               </button>
                             </div>
-                            {packetReplayResult && (
-                              <div className="p-[3%] bg-white/30 rounded text-[#233f66] text-[clamp(8px,0.85vw,13px)] break-words">
-                                {packetReplayResult}
-                              </div>
-                            )}
                           </div>
                         )}
 
@@ -3867,11 +3793,6 @@ batman`)
                                 <span className="text-white text-[clamp(9px,1vw,14px)] font-bold">Đánh giá</span>
                               </button>
                             </div>
-                            {domainEvaluationResult && (
-                              <div className="p-[3%] bg-white/30 rounded text-[#233f66] text-[clamp(8px,0.85vw,13px)] break-words">
-                                {domainEvaluationResult}
-                              </div>
-                            )}
                           </div>
                         )}
 
@@ -3907,11 +3828,6 @@ batman`)
                                 </button>
                               ))}
                             </div>
-                            {selectedFakeWebsite && (
-                              <div className="p-[3%] bg-white/30 rounded text-[#233f66] text-[clamp(8px,0.85vw,13px)]">
-                                Đã chọn: {selectedFakeWebsite}
-                              </div>
-                            )}
                           </div>
                         )}
 
@@ -3931,7 +3847,7 @@ batman`)
                                   if (cppRes.ok) {
                                     setCapchaMalwareResult(`Kết quả: ${cppRes.result}`)
                                   } else {
-                                    setCapchaMalwareResult('Đã tạo mã độc capcha')
+                                    setCapchaMalwareResult('ĐÃ KÍCH HOẠT MÃ ĐỘC CAPCHA')
                                   }
                                 }}
                                 className="relative w-full"
@@ -3941,7 +3857,7 @@ batman`)
                               </button>
                             </div>
                             {capchaMalwareResult && (
-                              <div className="p-[3%] bg-white/30 rounded text-[#233f66] text-[clamp(8px,0.85vw,13px)] break-words">
+                              <div className="p-[3%] bg-white/30 rounded text-green-600 text-[clamp(8px,0.85vw,13px)] break-words font-bold">
                                 {capchaMalwareResult}
                               </div>
                             )}
